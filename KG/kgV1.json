@@ -1,0 +1,2288 @@
+{
+  "nodes": [
+    {
+      "id": "I Supervised learning",
+      "type": "major",
+      "parent": null,
+      "description": "Overview of supervised learning techniques"
+    },
+    {
+      "id": "1 Linear regression",
+      "type": "subnode",
+      "parent": "I Supervised learning",
+      "description": "Introduction to linear regression models"
+    },
+    {
+      "id": "1.1 LMS algorithm",
+      "type": "subnode",
+      "parent": "1 Linear regression",
+      "description": "Least Mean Squares (LMS) algorithm for linear regression"
+    },
+    {
+      "id": "1.2 The normal equations",
+      "type": "subnode",
+      "parent": "1 Linear regression",
+      "description": "Normal equation method to solve linear regression problems"
+    },
+    {
+      "id": "1.2.1 Matrix derivatives",
+      "type": "subnode",
+      "parent": "1.2 The normal equations",
+      "description": "Derivation of matrix calculus for normal equations"
+    },
+    {
+      "id": "1.2.2 Least squares revisited",
+      "type": "subnode",
+      "parent": "1.2 The normal equations",
+      "description": "Revisiting least squares method in linear regression"
+    },
+    {
+      "id": "1.3 Probabilistic interpretation",
+      "type": "subnode",
+      "parent": "1 Linear regression",
+      "description": "Probabilistic assumptions for least-squares regression"
+    },
+    {
+      "id": "1.4 Locally weighted linear regression (optional reading)",
+      "type": "subnode",
+      "parent": "1 Linear regression",
+      "description": "Locally weighted version of linear regression for non-stationary data"
+    },
+    {
+      "id": "2 Classification and logistic regression",
+      "type": "subnode",
+      "parent": "I Supervised learning",
+      "description": "Introduction to classification using logistic regression"
+    },
+    {
+      "id": "2.1 Logistic regression",
+      "type": "subnode",
+      "parent": "2 Classification and logistic regression",
+      "description": "Logistic regression for binary classification problems"
+    },
+    {
+      "id": "2.2 Digression: the perceptron learning algorithm",
+      "type": "subnode",
+      "parent": "2 Classification and logistic regression",
+      "description": "Perceptron learning algorithm as a precursor to modern classifiers"
+    },
+    {
+      "id": "2.3 Multi-class classification",
+      "type": "subnode",
+      "parent": "2 Classification and logistic regression",
+      "description": "Techniques for multi-class classification problems"
+    },
+    {
+      "id": "2.4 Another algorithm for maximizing \u03bb(\u03b8)",
+      "type": "subnode",
+      "parent": "2 Classification and logistic regression",
+      "description": "Alternative methods to maximize the likelihood function in classification"
+    },
+    {
+      "id": "3 Generalized linear models",
+      "type": "subnode",
+      "parent": "I Supervised learning",
+      "description": "Introduction to generalized linear models (GLMs)"
+    },
+    {
+      "id": "3.1 The exponential family",
+      "type": "subnode",
+      "parent": "3 Generalized linear models",
+      "description": "Exponential family distributions in GLM framework"
+    },
+    {
+      "id": "3.2 Constructing GLMs",
+      "type": "subnode",
+      "parent": "3 Generalized linear models",
+      "description": "Methods to construct generalized linear models"
+    },
+    {
+      "id": "3.2.1 Ordinary least squares",
+      "type": "subnode",
+      "parent": "3.2 Constructing GLMs",
+      "description": "Ordinary least squares method in the context of GLMs"
+    },
+    {
+      "id": "3.2.2 Logistic regression",
+      "type": "subnode",
+      "parent": "3.2 Constructing GLMs",
+      "description": "Logistic regression as a specific case of GLMs"
+    },
+    {
+      "id": "4 Generative learning algorithms",
+      "type": "subnode",
+      "parent": "I Supervised learning",
+      "description": "Introduction to generative learning approaches"
+    },
+    {
+      "id": "4.1 Gaussian discriminant analysis",
+      "type": "subnode",
+      "parent": "4 Generative learning algorithms",
+      "description": "Gaussian Discriminant Analysis (GDA) for classification"
+    },
+    {
+      "id": "4.1.1 The multivariate normal distribution",
+      "type": "subnode",
+      "parent": "4.1 Gaussian discriminant analysis",
+      "description": "Multivariate normal distribution in GDA"
+    },
+    {
+      "id": "4.1.2 The Gaussian discriminant analysis model",
+      "type": "subnode",
+      "parent": "4.1 Gaussian discriminant analysis",
+      "description": "Model formulation of GDA"
+    },
+    {
+      "id": "4.1.3 Discussion: GDA and logistic regression",
+      "type": "subnode",
+      "parent": "4.1 Gaussian discriminant analysis",
+      "description": "Comparison between GDA and logistic regression models"
+    },
+    {
+      "id": "4.2 Naive bayes (Option Reading)",
+      "type": "subnode",
+      "parent": "4 Generative learning algorithms",
+      "description": "Naive Bayes classifier for text classification tasks"
+    },
+    {
+      "id": "4.2.1 Laplace smoothing",
+      "type": "subnode",
+      "parent": "4.2 Naive bayes (Option Reading)",
+      "description": "Laplace smoothing technique in naive Bayes classifiers"
+    },
+    {
+      "id": "4.2.2 Event models for text classification",
+      "type": "subnode",
+      "parent": "4.2 Naive bayes (Option Reading)",
+      "description": "Event models used in text classification with naive Bayes"
+    },
+    {
+      "id": "5 Kernel methods",
+      "type": "major",
+      "parent": null,
+      "description": "Techniques using kernel functions for non-linear data"
+    },
+    {
+      "id": "5.1 Feature maps",
+      "type": "subnode",
+      "parent": "5 Kernel methods",
+      "description": "Mapping input features to higher-dimensional space"
+    },
+    {
+      "id": "5.2 LMS (least mean squares) with features",
+      "type": "subnode",
+      "parent": "5 Kernel methods",
+      "description": "LMS algorithm applied in feature space"
+    },
+    {
+      "id": "5.3 LMS with the kernel trick",
+      "type": "subnode",
+      "parent": "5 Kernel methods",
+      "description": "Using kernels to perform LMS in high-dimensional spaces"
+    },
+    {
+      "id": "5.4 Properties of kernels",
+      "type": "subnode",
+      "parent": "5 Kernel methods",
+      "description": "Properties and characteristics of kernel functions"
+    },
+    {
+      "id": "6 Support vector machines",
+      "type": "major",
+      "parent": null,
+      "description": "Introduction to support vector machines for classification"
+    },
+    {
+      "id": "6.1 Margins: intuition",
+      "type": "subnode",
+      "parent": "6 Support vector machines",
+      "description": "Intuitive understanding of margins in SVMs"
+    },
+    {
+      "id": "6.2 Notation (option reading)",
+      "type": "subnode",
+      "parent": "6 Support vector machines",
+      "description": "Notational conventions used in SVM theory"
+    },
+    {
+      "id": "6.3 Functional and geometric margins (option reading)",
+      "type": "subnode",
+      "parent": "6 Support vector machines",
+      "description": "Definitions of functional and geometric margins"
+    },
+    {
+      "id": "6.4 The optimal margin classifier (option reading)",
+      "type": "subnode",
+      "parent": "6 Support vector machines",
+      "description": "Optimal margin classifier formulation in SVMs"
+    },
+    {
+      "id": "6.5 Lagrange duality (optional reading)",
+      "type": "subnode",
+      "parent": "6 Support vector machines",
+      "description": "Lagrange duality principle applied to SVM optimization"
+    },
+    {
+      "id": "6.6 Optimal margin classifiers: the dual form (option reading)",
+      "type": "subnode",
+      "parent": "6 Support vector machines",
+      "description": "Dual formulation of optimal margin classifier in SVMs"
+    },
+    {
+      "id": "6.7 Regularization and the non-separable case (optional reading)",
+      "type": "subnode",
+      "parent": "6 Support vector machines",
+      "description": "Regularization techniques for handling non-separable data"
+    },
+    {
+      "id": "6.8 The SMO algorithm (optional reading)",
+      "type": "subnode",
+      "parent": "6 Support vector machines",
+      "description": "Sequential Minimal Optimization (SMO) algorithm for SVM training"
+    },
+    {
+      "id": "II Deep learning",
+      "type": "major",
+      "parent": null,
+      "description": "Introduction to deep learning concepts and models"
+    },
+    {
+      "id": "7 Deep learning",
+      "type": "subnode",
+      "parent": "II Deep learning",
+      "description": "Overview of deep learning techniques and applications"
+    },
+    {
+      "id": "7.1 Supervised learning with non-linear models",
+      "type": "subnode",
+      "parent": "7 Deep learning",
+      "description": "Supervised learning using non-linear models in deep learning"
+    },
+    {
+      "id": "7.2 Neural networks",
+      "type": "subnode",
+      "parent": "7 Deep learning",
+      "description": "Introduction to neural network architectures and training methods"
+    },
+    {
+      "id": "7.3 Modules in Modern Neural Networks",
+      "type": "subnode",
+      "parent": "7 Deep learning",
+      "description": "Discussion of modern modules used in deep neural networks"
+    },
+    {
+      "id": "7.4 Backpropagation",
+      "type": "subnode",
+      "parent": "7 Deep learning",
+      "description": "Backpropagation algorithm for training neural networks"
+    },
+    {
+      "id": "Modern Neural Networks",
+      "type": "major",
+      "parent": null,
+      "description": "Overview of modern neural network architectures and training techniques"
+    },
+    {
+      "id": "Modules in Modern Neural Networks",
+      "type": "subnode",
+      "parent": "Modern Neural Networks",
+      "description": "Discussion on various modules used in contemporary neural networks"
+    },
+    {
+      "id": "Backpropagation",
+      "type": "subnode",
+      "parent": "Modern Neural Networks",
+      "description": "Explanation of backpropagation algorithm for training neural networks"
+    },
+    {
+      "id": "Preliminaries on partial derivatives",
+      "type": "subnode",
+      "parent": "Backpropagation",
+      "description": "Introduction to partial derivatives necessary for understanding backpropagation"
+    },
+    {
+      "id": "General strategy of backpropagation",
+      "type": "subnode",
+      "parent": "Backpropagation",
+      "description": "Overview of the general approach used in backpropagation"
+    },
+    {
+      "id": "Backward functions for basic modules",
+      "type": "subnode",
+      "parent": "Backpropagation",
+      "description": "Detailed explanation of backward functions for fundamental network components"
+    },
+    {
+      "id": "Back-propagation for MLPs",
+      "type": "subnode",
+      "parent": "Backpropagation",
+      "description": "Application of backpropagation to multi-layer perceptrons (MLPs)"
+    },
+    {
+      "id": "Vectorization over training examples",
+      "type": "subnode",
+      "parent": "Modern Neural Networks",
+      "description": "Explanation on how vectorization can be applied across multiple training samples"
+    },
+    {
+      "id": "Generalization and regularization",
+      "type": "major",
+      "parent": null,
+      "description": "Discussion on techniques to improve model performance on unseen data"
+    },
+    {
+      "id": "Generalization",
+      "type": "subnode",
+      "parent": "Generalization and regularization",
+      "description": "Overview of concepts related to generalizing models to new data"
+    },
+    {
+      "id": "Bias-variance tradeoff",
+      "type": "subnode",
+      "parent": "Generalization",
+      "description": "Explanation of the balance between model complexity and error due to bias and variance"
+    },
+    {
+      "id": "A mathematical decomposition (for regression)",
+      "type": "subnode",
+      "parent": "Bias-variance tradeoff",
+      "description": "Mathematical breakdown for understanding bias-variance in regression models"
+    },
+    {
+      "id": "The double descent phenomenon",
+      "type": "subnode",
+      "parent": "Generalization",
+      "description": "Discussion on the unexpected performance improvement with increased model complexity"
+    },
+    {
+      "id": "Sample complexity bounds (optional readings)",
+      "type": "subnode",
+      "parent": "Generalization",
+      "description": "Bounds on sample size required for learning, including finite and infinite hypothesis spaces"
+    },
+    {
+      "id": "Regularization and model selection",
+      "type": "major",
+      "parent": null,
+      "description": "Techniques to prevent overfitting by penalizing complex models or selecting the best one via validation"
+    },
+    {
+      "id": "Regularization",
+      "type": "subnode",
+      "parent": "Regularization and model selection",
+      "description": "Methods for adding penalties to the loss function to reduce complexity"
+    },
+    {
+      "id": "Implicit regularization effect (optional reading)",
+      "type": "subnode",
+      "parent": "Regularization and model selection",
+      "description": "Exploration of how certain algorithms inherently regularize models without explicit penalties"
+    },
+    {
+      "id": "Model selection via cross validation",
+      "type": "subnode",
+      "parent": "Regularization and model selection",
+      "description": "Use of cross-validation to choose the best performing model"
+    },
+    {
+      "id": "Bayesian statistics and regularization",
+      "type": "subnode",
+      "parent": "Regularization and model selection",
+      "description": "Application of Bayesian methods in regularizing models"
+    },
+    {
+      "id": "Unsupervised learning",
+      "type": "major",
+      "parent": null,
+      "description": "Techniques for learning from data without labeled responses"
+    },
+    {
+      "id": "Clustering and the k-means algorithm",
+      "type": "subnode",
+      "parent": "Unsupervised learning",
+      "description": "Introduction to clustering methods with a focus on the k-means algorithm"
+    },
+    {
+      "id": "EM algorithms",
+      "type": "subnode",
+      "parent": "Unsupervised learning",
+      "description": "Explanation of Expectation-Maximization (EM) techniques for parameter estimation in probabilistic models"
+    },
+    {
+      "id": "EM for mixture of Gaussians",
+      "type": "subnode",
+      "parent": "EM algorithms",
+      "description": "Application of EM to Gaussian Mixture Models"
+    },
+    {
+      "id": "Jensen's inequality",
+      "type": "subnode",
+      "parent": "EM algorithms",
+      "description": "Mathematical principle used in deriving the EM algorithm"
+    },
+    {
+      "id": "General EM algorithms",
+      "type": "subnode",
+      "parent": "EM algorithms",
+      "description": "Overview of general EM techniques and their applications"
+    },
+    {
+      "id": "Other interpretation of ELBO",
+      "type": "subnode",
+      "parent": "General EM algorithms",
+      "description": "Alternative view on the Evidence Lower BOund (ELBO) in variational inference"
+    },
+    {
+      "id": "Mixture of Gaussians revisited",
+      "type": "subnode",
+      "parent": "EM algorithms",
+      "description": "Revisiting mixture models with a focus on Gaussian distributions"
+    },
+    {
+      "id": "Variational inference and variational auto-encoder (optional reading)",
+      "type": "subnode",
+      "parent": "EM algorithms",
+      "description": "Advanced topic covering variational methods for approximate Bayesian inference"
+    },
+    {
+      "id": "Principal components analysis",
+      "type": "subnode",
+      "parent": "Unsupervised learning",
+      "description": "Dimensionality reduction technique that projects data onto principal components"
+    },
+    {
+      "id": "Independent components analysis",
+      "type": "subnode",
+      "parent": "Unsupervised learning",
+      "description": "Technique for separating mixed signals into independent sources"
+    },
+    {
+      "id": "ICA ambiguities",
+      "type": "subnode",
+      "parent": "Independent components analysis",
+      "description": "Discussion on the inherent ambiguities in ICA solutions"
+    },
+    {
+      "id": "Densities and linear transformations",
+      "type": "subnode",
+      "parent": "Independent components analysis",
+      "description": "Analysis of probability densities under linear transformations"
+    },
+    {
+      "id": "ICA algorithm",
+      "type": "subnode",
+      "parent": "Independent components analysis",
+      "description": "Detailed explanation of the ICA algorithm and its implementation"
+    },
+    {
+      "id": "Self-supervised learning and foundation models",
+      "type": "major",
+      "parent": null,
+      "description": "Techniques for training models with self-generated labels and large-scale pretraining approaches"
+    },
+    {
+      "id": "Pretraining and adaptation",
+      "type": "subnode",
+      "parent": "Self-supervised learning and foundation models",
+      "description": "Overview of methods for initializing and fine-tuning large language models"
+    },
+    {
+      "id": "Pretraining methods in computer vision",
+      "type": "subnode",
+      "parent": "Self-supervised learning and foundation models",
+      "description": "Discussion on pretraining techniques specific to visual data"
+    },
+    {
+      "id": "Pretrained large language models",
+      "type": "subnode",
+      "parent": "Self-supervised learning and foundation models",
+      "description": "Exploration of the architecture and training of large-scale language models"
+    },
+    {
+      "id": "Open up the blackbox of Transformers",
+      "type": "subnode",
+      "parent": "Pretrained large language models",
+      "description": "Insight into the workings of transformer-based architectures in NLP"
+    },
+    {
+      "id": "Zero-shot learning and in-context learning",
+      "type": "subnode",
+      "parent": "Pretrained large language models",
+      "description": "Demonstration of capabilities to perform tasks without prior training data"
+    },
+    {
+      "id": "Reinforcement Learning and Control",
+      "type": "major",
+      "parent": null,
+      "description": "Techniques for learning optimal policies through interaction with an environment"
+    },
+    {
+      "id": "Reinforcement learning",
+      "type": "subnode",
+      "parent": "Reinforcement Learning and Control",
+      "description": "Introduction to reinforcement learning concepts and algorithms"
+    },
+    {
+      "id": "Markov decision processes",
+      "type": "subnode",
+      "parent": "Reinforcement learning",
+      "description": "Formulation of decision-making problems in a stochastic environment"
+    },
+    {
+      "id": "Value iteration and policy iteration",
+      "type": "subnode",
+      "parent": "Reinforcement learning",
+      "description": "Algorithms for finding optimal policies through iterative methods"
+    },
+    {
+      "id": "Learning a model for an MDP",
+      "type": "subnode",
+      "parent": "Reinforcement learning",
+      "description": "Techniques for estimating the transition dynamics of an MDP from data"
+    },
+    {
+      "id": "Continuous state MDPs",
+      "type": "subnode",
+      "parent": "Reinforcement learning",
+      "description": "Discussion on reinforcement learning in environments with continuous states"
+    },
+    {
+      "id": "Discretization",
+      "type": "subnode",
+      "parent": "Continuous state MDPs",
+      "description": "Method of converting a continuous state space into a discrete one for computational feasibility"
+    },
+    {
+      "id": "Value function approximation",
+      "type": "subnode",
+      "parent": "Continuous state MDPs",
+      "description": "Techniques for approximating value functions in large or continuous state spaces"
+    },
+    {
+      "id": "Connections between Policy and Value Iteration (Optional)",
+      "type": "subnode",
+      "parent": "Reinforcement learning",
+      "description": "Exploration of the relationships and equivalences between policy and value iteration methods"
+    },
+    {
+      "id": "LQR, DDP and LQG",
+      "type": "major",
+      "parent": null,
+      "description": "Optimal control techniques for linear systems with quadratic costs"
+    },
+    {
+      "id": "Finite-horizon MDPs",
+      "type": "subnode",
+      "parent": "LQR, DDP and LQG",
+      "description": "Discussion on decision-making problems over a fixed time horizon"
+    },
+    {
+      "id": "Connections between Policy and Value Iteration",
+      "type": "subnode",
+      "parent": "Learning a model for an MDP",
+      "description": "Relationships between policy and value iteration methods (optional)"
+    },
+    {
+      "id": "Linear Quadratic Regulation (LQR)",
+      "type": "subnode",
+      "parent": "LQR, DDP and LQG",
+      "description": "Optimal control for linear systems with quadratic cost functions"
+    },
+    {
+      "id": "From non-linear dynamics to LQR",
+      "type": "subnode",
+      "parent": "LQR, DDP and LQG",
+      "description": "Approaches to apply LQR to nonlinear systems"
+    },
+    {
+      "id": "Linearization of dynamics",
+      "type": "subnode",
+      "parent": "From non-linear dynamics to LQR",
+      "description": "Approximating nonlinear dynamics with linear models"
+    },
+    {
+      "id": "Differential Dynamic Programming (DDP)",
+      "type": "subnode",
+      "parent": "From non-linear dynamics to LQR",
+      "description": "Optimization technique for nonlinear systems using differential dynamic programming"
+    },
+    {
+      "id": "Linear Quadratic Gaussian (LQG)",
+      "type": "subnode",
+      "parent": "LQR, DDP and LQG",
+      "description": "Control strategy combining LQR with stochastic dynamics"
+    },
+    {
+      "id": "Policy Gradient (REINFORCE)",
+      "type": "major",
+      "parent": null,
+      "description": "Method for learning policies in reinforcement learning environments"
+    },
+    {
+      "id": "Supervised Learning Examples",
+      "type": "major",
+      "parent": null,
+      "description": "Introduction to supervised learning through examples"
+    },
+    {
+      "id": "Supervised Learning Problem",
+      "type": "major",
+      "parent": null,
+      "description": "Formal description of supervised learning problem"
+    },
+    {
+      "id": "Regression Problem",
+      "type": "subnode",
+      "parent": "Supervised Learning Problem",
+      "description": "Learning problem where target variable is continuous"
+    },
+    {
+      "id": "Classification Problem",
+      "type": "subnode",
+      "parent": "Supervised Learning Problem",
+      "description": "Learning problem where target variable takes on discrete values"
+    },
+    {
+      "id": "Hypothesis Function",
+      "type": "subnode",
+      "parent": "Supervised Learning Problem",
+      "description": "Function learned to predict y from x"
+    },
+    {
+      "id": "Linear Regression",
+      "type": "major",
+      "parent": "Parametric Algorithms",
+      "description": "Predicts continuous outcomes using a linear function of the input features"
+    },
+    {
+      "id": "Housing Example Dataset",
+      "type": "subnode",
+      "parent": "Linear Regression",
+      "description": "Example dataset with living area and number of bedrooms"
+    },
+    {
+      "id": "Feature Selection",
+      "type": "subnode",
+      "parent": "Linear Regression",
+      "description": "Process of choosing relevant features for prediction"
+    },
+    {
+      "id": "Machine_Learning_Basics",
+      "type": "major",
+      "parent": null,
+      "description": "Introduction to fundamental concepts in machine learning"
+    },
+    {
+      "id": "Function_Representation",
+      "type": "subnode",
+      "parent": "Machine_Learning_Basics",
+      "description": "How functions are represented in machine learning models"
+    },
+    {
+      "id": "Linear_Functions",
+      "type": "subnode",
+      "parent": "Function_Representation",
+      "description": "Using linear equations to represent hypotheses"
+    },
+    {
+      "id": "Parameters_Weights",
+      "type": "subnode",
+      "parent": "Linear_Functions",
+      "description": "Definition and role of parameters in linear models"
+    },
+    {
+      "id": "Cost_Function",
+      "type": "subnode",
+      "parent": "Function_Representation",
+      "description": "Measure to quantify the error between predicted values and actual data"
+    },
+    {
+      "id": "Ordinary_Least_Squares",
+      "type": "subnode",
+      "parent": "Cost_Function",
+      "description": "Method for minimizing cost function in linear regression"
+    },
+    {
+      "id": "LMS_Algorithm",
+      "type": "major",
+      "parent": null,
+      "description": "Learning algorithm to minimize the cost function iteratively"
+    },
+    {
+      "id": "GradientDescentAlgorithm",
+      "type": "major",
+      "parent": null,
+      "description": "Optimization algorithm that iteratively minimizes a cost function."
+    },
+    {
+      "id": "LearningRate",
+      "type": "subnode",
+      "parent": "GradientDescentAlgorithm",
+      "description": "Hyperparameter controlling the step size in gradient descent."
+    },
+    {
+      "id": "CostFunctionJ",
+      "type": "subnode",
+      "parent": "GradientDescentAlgorithm",
+      "description": "Function to be minimized, often representing error or loss."
+    },
+    {
+      "id": "UpdateRule",
+      "type": "subnode",
+      "parent": "GradientDescentAlgorithm",
+      "description": "Rule defining how parameters are updated in each iteration."
+    },
+    {
+      "id": "LMSUpdateRule",
+      "type": "subnode",
+      "parent": "UpdateRule",
+      "description": "Least Mean Squares update rule, similar but different from the one used in logistic regression."
+    },
+    {
+      "id": "PartialDerivativeCalculation",
+      "type": "subnode",
+      "parent": "GradientDescentAlgorithm",
+      "description": "Process of calculating the partial derivative of cost function with respect to parameters."
+    },
+    {
+      "id": "LMS_Update_Rule",
+      "type": "major",
+      "parent": null,
+      "description": "Rule for updating parameters in machine learning models."
+    },
+    {
+      "id": "Widrow_Hoff_Learning_Rule",
+      "type": "subnode",
+      "parent": "LMS_Update_Rule",
+      "description": "Alternative name for LMS update rule."
+    },
+    {
+      "id": "Error_Term",
+      "type": "subnode",
+      "parent": "LMS_Update_Rule",
+      "description": "Difference between actual and predicted values used to adjust parameters."
+    },
+    {
+      "id": "Single_Training_Example",
+      "type": "subnode",
+      "parent": "LMS_Update_Rule",
+      "description": "Initial derivation of LMS rule for one training example."
+    },
+    {
+      "id": "Batch_Gradient_Descent",
+      "type": "major",
+      "parent": null,
+      "description": "Method that uses all examples in the dataset to update parameters."
+    },
+    {
+      "id": "Gradient_Descent_Optimization",
+      "type": "subnode",
+      "parent": "Batch_Gradient_Descent",
+      "description": "Optimization technique ensuring convergence for linear regression problems."
+    },
+    {
+      "id": "Linear Regression Optimization",
+      "type": "major",
+      "parent": null,
+      "description": "Optimization problem in linear regression and its properties."
+    },
+    {
+      "id": "Gradient Descent Convergence",
+      "type": "subnode",
+      "parent": "Linear Regression Optimization",
+      "description": "Convergence of gradient descent to a global minimum for convex quadratic functions."
+    },
+    {
+      "id": "Batch Gradient Descent Example",
+      "type": "subnode",
+      "parent": "Linear Regression Optimization",
+      "description": "Example of batch gradient descent applied to housing price prediction."
+    },
+    {
+      "id": "Stochastic Gradient Descent",
+      "type": "major",
+      "parent": "Parameter Updates",
+      "description": "An optimization algorithm that uses random samples for gradient estimation."
+    },
+    {
+      "id": "SGD Algorithm Details",
+      "type": "subnode",
+      "parent": "Stochastic Gradient Descent",
+      "description": "Details of the stochastic gradient descent update rule and its implementation."
+    },
+    {
+      "id": "GradientDescent",
+      "type": "major",
+      "parent": "LinearRegression",
+      "description": "Optimization algorithm to minimize cost function iteratively"
+    },
+    {
+      "id": "StochasticGradientDescent",
+      "type": "subnode",
+      "parent": "GradientDescent",
+      "description": "Algorithm updating parameters based on single training example gradient."
+    },
+    {
+      "id": "BatchGradientDescent",
+      "type": "subnode",
+      "parent": "GradientDescent",
+      "description": "Requires scanning entire dataset before parameter update."
+    },
+    {
+      "id": "LearningRateAdjustment",
+      "type": "subnode",
+      "parent": "StochasticGradientDescent",
+      "description": "Decreasing learning rate over time to ensure convergence."
+    },
+    {
+      "id": "NormalEquations",
+      "type": "major",
+      "parent": "CostFunction",
+      "description": "Direct method for finding the minimum of a convex quadratic function"
+    },
+    {
+      "id": "Matrix Derivatives",
+      "type": "major",
+      "parent": null,
+      "description": "Derivative of a function mapping matrices to real numbers"
+    },
+    {
+      "id": "Gradient Definition",
+      "type": "subnode",
+      "parent": "Matrix Derivatives",
+      "description": "Definition and computation of the gradient for matrix functions"
+    },
+    {
+      "id": "Example Function",
+      "type": "subnode",
+      "parent": "Matrix Derivatives",
+      "description": "Specific example function with its derivative calculation"
+    },
+    {
+      "id": "Least Squares Revisited",
+      "type": "major",
+      "parent": null,
+      "description": "Revisiting least squares using matrix derivatives"
+    },
+    {
+      "id": "Design Matrix",
+      "type": "subnode",
+      "parent": "Least Squares Revisited",
+      "description": "Matrix representation of training data inputs"
+    },
+    {
+      "id": "Target Vector",
+      "type": "subnode",
+      "parent": "Least Squares Revisited",
+      "description": "Vector containing target values from the training set"
+    },
+    {
+      "id": "Closed Form Solution",
+      "type": "subnode",
+      "parent": "Least Squares Revisited",
+      "description": "Finding theta that minimizes J(theta) using matrix notation"
+    },
+    {
+      "id": "MachineLearningOverview",
+      "type": "major",
+      "parent": null,
+      "description": "Introduction to machine learning concepts and algorithms"
+    },
+    {
+      "id": "LinearRegression",
+      "type": "subnode",
+      "parent": "MachineLearningOverview",
+      "description": "Basic linear regression algorithm for predicting outcomes based on input data"
+    },
+    {
+      "id": "CostFunction",
+      "type": "subnode",
+      "parent": "LinearRegression",
+      "description": "Quantifies the error between predicted values and expected outcomes"
+    },
+    {
+      "id": "Regression problem",
+      "type": "subnode",
+      "parent": "1.3 Probabilistic interpretation",
+      "description": "Context of using linear regression and least squares cost function"
+    },
+    {
+      "id": "Target variables and inputs relation",
+      "type": "subnode",
+      "parent": "1.3 Probabilistic interpretation",
+      "description": "Equation relating target variable y to input x with error term \u03b5"
+    },
+    {
+      "id": "Error term distribution",
+      "type": "subnode",
+      "parent": "1.3 Probabilistic interpretation",
+      "description": "Assumption that error terms are IID Gaussian distributed"
+    },
+    {
+      "id": "Conditional probability of y given x and \u03b8",
+      "type": "subnode",
+      "parent": "1.3 Probabilistic interpretation",
+      "description": "Expression for the conditional distribution of y given x and parameters \u03b8"
+    },
+    {
+      "id": "Machine_Learning_Models",
+      "type": "major",
+      "parent": null,
+      "description": "Models used in machine learning to predict outcomes based on input data."
+    },
+    {
+      "id": "Conditional_Probability_Distribution",
+      "type": "subnode",
+      "parent": "Machine_Learning_Models",
+      "description": "Distribution of y given x and parameters \u03b8, not conditioned on \u03b8."
+    },
+    {
+      "id": "Design_Matrix_X",
+      "type": "subnode",
+      "parent": "Machine_Learning_Models",
+      "description": "Matrix containing all input data points x^(i) used in model calculations."
+    },
+    {
+      "id": "Probability_of_Data",
+      "type": "subnode",
+      "parent": "Machine_Learning_Models",
+      "description": "Joint probability of observed y given X and \u03b8, viewed as a function of y for fixed \u03b8."
+    },
+    {
+      "id": "Likelihood_Function",
+      "type": "subnode",
+      "parent": "Probability_of_Data",
+      "description": "Function L(\u03b8) representing the likelihood of data given model parameters \u03b8."
+    },
+    {
+      "id": "Independence_Assumption",
+      "type": "subnode",
+      "parent": "Likelihood_Function",
+      "description": "Assumption that errors \u03b5^(i) are independent, leading to a product form for likelihood function."
+    },
+    {
+      "id": "Maximum_Likelihood_Estimation",
+      "type": "subnode",
+      "parent": "Machine_Learning_Models",
+      "description": "Method of choosing parameters \u03b8 to maximize the probability of observed data under model assumptions."
+    },
+    {
+      "id": "Log_Likelihood_Function",
+      "type": "subnode",
+      "parent": "Maximum_Likelihood_Estimation",
+      "description": "Function \u2113(\u03b8) obtained by taking logarithm of likelihood function for easier computation and analysis."
+    },
+    {
+      "id": "Machine Learning Fundamentals",
+      "type": "major",
+      "parent": null,
+      "description": "Basic concepts and methods in machine learning."
+    },
+    {
+      "id": "Maximum Likelihood Estimation (MLE)",
+      "type": "subnode",
+      "parent": "Machine Learning Fundamentals",
+      "description": "Estimating parameters to maximize the likelihood function."
+    },
+    {
+      "id": "Least Squares Regression",
+      "type": "subnode",
+      "parent": "Machine Learning Fundamentals",
+      "description": "Method for fitting a line to data by minimizing squared errors."
+    },
+    {
+      "id": "Probabilistic Assumptions",
+      "type": "subnode",
+      "parent": "Maximum Likelihood Estimation (MLE)",
+      "description": "Assumptions about the distribution of data in MLE context."
+    },
+    {
+      "id": "Cost Function J(\u03b8)",
+      "type": "subnode",
+      "parent": "Least Squares Regression",
+      "description": "Function to minimize for least squares regression."
+    },
+    {
+      "id": "Locally Weighted Linear Regression (LWLR)",
+      "type": "major",
+      "parent": null,
+      "description": "Technique for non-linear data fitting using weighted linear regression."
+    },
+    {
+      "id": "MachineLearningConcepts",
+      "type": "major",
+      "parent": null,
+      "description": "Overview of key concepts in machine learning"
+    },
+    {
+      "id": "FeatureSelection",
+      "type": "subnode",
+      "parent": "MachineLearningConcepts",
+      "description": "Importance of selecting appropriate features for a model"
+    },
+    {
+      "id": "Underfitting",
+      "type": "subnode",
+      "parent": "LinearRegression",
+      "description": "Model fails to capture the structure in data"
+    },
+    {
+      "id": "Overfitting",
+      "type": "subnode",
+      "parent": "LinearRegression",
+      "description": "Model performs well on training data but poorly on unseen data"
+    },
+    {
+      "id": "LocallyWeightedLinearRegression",
+      "type": "subnode",
+      "parent": "MachineLearningConcepts",
+      "description": "Variant of linear regression that weights training examples differently based on proximity to the query point"
+    },
+    {
+      "id": "WeightsInLWLR",
+      "type": "subnode",
+      "parent": "LocallyWeightedLinearRegression",
+      "description": "Explanation of how weights are calculated in locally weighted linear regression"
+    },
+    {
+      "id": "BandwidthParameter",
+      "type": "subnode",
+      "parent": "LocallyWeightedLinearRegression",
+      "description": "Description and importance of the bandwidth parameter in LWLR"
+    },
+    {
+      "id": "Machine Learning Concepts",
+      "type": "major",
+      "parent": null,
+      "description": "Overview of key machine learning concepts and algorithms"
+    },
+    {
+      "id": "Non-parametric Algorithms",
+      "type": "subnode",
+      "parent": "Machine Learning Concepts",
+      "description": "Algorithms where the model complexity grows with data size"
+    },
+    {
+      "id": "Locally Weighted Linear Regression",
+      "type": "subnode",
+      "parent": "Non-parametric Algorithms",
+      "description": "Regression technique that weights training examples based on proximity to query point"
+    },
+    {
+      "id": "Parametric Algorithms",
+      "type": "subnode",
+      "parent": "Machine Learning Concepts",
+      "description": "Algorithms with fixed model complexity, independent of data size"
+    },
+    {
+      "id": "Binary Classification",
+      "type": "subnode",
+      "parent": "Classification Problem",
+      "description": "Type of classification where output is one of two classes"
+    },
+    {
+      "id": "Logistic Regression",
+      "type": "major",
+      "parent": "Machine Learning Overview",
+      "description": "Method for binary classification using a logistic function to model probabilities"
+    },
+    {
+      "id": "Machine Learning Overview",
+      "type": "major",
+      "parent": null,
+      "description": "Overview of machine learning concepts and algorithms."
+    },
+    {
+      "id": "Linear Regression Limitations",
+      "type": "subnode",
+      "parent": "Logistic Regression",
+      "description": "Issues with applying linear regression to classification problems"
+    },
+    {
+      "id": "Sigmoid Function",
+      "type": "subnode",
+      "parent": "Logistic Regression",
+      "description": "Function used in logistic regression to map values between 0 and 1"
+    },
+    {
+      "id": "Hypothesis Formulation",
+      "type": "subnode",
+      "parent": "Logistic Regression",
+      "description": "Form of hypothesis function h_theta(x) using sigmoid function"
+    },
+    {
+      "id": "Derivative of Sigmoid",
+      "type": "subnode",
+      "parent": "Sigmoid Function",
+      "description": "Calculation and properties of the derivative of the sigmoid function"
+    },
+    {
+      "id": "MachineLearningModels",
+      "type": "major",
+      "parent": null,
+      "description": "Overview of models used in machine learning"
+    },
+    {
+      "id": "ClassificationModel",
+      "type": "subnode",
+      "parent": "MachineLearningModels",
+      "description": "A model that predicts categorical outcomes"
+    },
+    {
+      "id": "MaximumLikelihoodEstimation",
+      "type": "subnode",
+      "parent": "MachineLearningModels",
+      "description": "Method for estimating the parameters of a statistical model"
+    },
+    {
+      "id": "ProbabilisticAssumptions",
+      "type": "subnode",
+      "parent": "ClassificationModel",
+      "description": "Setting probabilistic assumptions for classification models"
+    },
+    {
+      "id": "LikelihoodFunction",
+      "type": "subnode",
+      "parent": "MaximumLikelihoodEstimation",
+      "description": "Function that measures how likely the observed data is given model parameters"
+    },
+    {
+      "id": "LogLikelihood",
+      "type": "subnode",
+      "parent": "LikelihoodFunction",
+      "description": "Natural logarithm of likelihood function for easier optimization"
+    },
+    {
+      "id": "GradientAscent",
+      "type": "subnode",
+      "parent": "MaximumLikelihoodEstimation",
+      "description": "Optimization technique used to maximize the likelihood function"
+    },
+    {
+      "id": "MachineLearning",
+      "type": "major",
+      "parent": null,
+      "description": "Field of study focusing on algorithms that learn from and make predictions on data."
+    },
+    {
+      "id": "LogisticRegression",
+      "type": "subnode",
+      "parent": "MachineLearning",
+      "description": "Statistical model used for binary classification problems."
+    },
+    {
+      "id": "GradientAscentRule",
+      "type": "subnode",
+      "parent": "LogisticRegression",
+      "description": "Update rule for parameters in logistic regression using gradient ascent."
+    },
+    {
+      "id": "LogisticLossFunction",
+      "type": "subnode",
+      "parent": "GradientAscentRule",
+      "description": "Function that measures the performance of a classification model at predicting 0s and 1s."
+    },
+    {
+      "id": "Logistic Regression Derivation",
+      "type": "subnode",
+      "parent": "Machine Learning Overview",
+      "description": "Derivation of logistic regression gradient descent update rule."
+    },
+    {
+      "id": "Perceptron Algorithm",
+      "type": "subnode",
+      "parent": "Machine Learning Overview",
+      "description": "Historical algorithm for binary classification with a threshold function."
+    },
+    {
+      "id": "Multi-class Classification",
+      "type": "subnode",
+      "parent": "Machine Learning Overview",
+      "description": "Classification problems where the response variable can take on multiple values."
+    },
+    {
+      "id": "Machine Learning",
+      "type": "major",
+      "parent": null,
+      "description": "Field of study focusing on algorithms that learn from data"
+    },
+    {
+      "id": "Classification",
+      "type": "subnode",
+      "parent": "Machine Learning",
+      "description": "Predicting discrete class labels for given inputs"
+    },
+    {
+      "id": "Multinomial Distribution",
+      "type": "subnode",
+      "parent": "Multi-class Classification",
+      "description": "Probability distribution over multiple discrete categories"
+    },
+    {
+      "id": "Softmax Function",
+      "type": "subnode",
+      "parent": "Multi-class Classification",
+      "description": "Function transforming vector inputs into probability distributions"
+    },
+    {
+      "id": "Logits",
+      "type": "subnode",
+      "parent": "Softmax Function",
+      "description": "Inputs to the softmax function before transformation"
+    },
+    {
+      "id": "Probability Vector",
+      "type": "subnode",
+      "parent": "Softmax Function",
+      "description": "Output of softmax, a vector with nonnegative entries summing to 1"
+    },
+    {
+      "id": "Probabilistic Model",
+      "type": "major",
+      "parent": null,
+      "description": "Model using softmax outputs as class probabilities given input features and parameters"
+    },
+    {
+      "id": "Negative Log-Likelihood",
+      "type": "subnode",
+      "parent": "Probabilistic Model",
+      "description": "Measure of model's performance for a single example"
+    },
+    {
+      "id": "Loss Function",
+      "type": "major",
+      "parent": null,
+      "description": "Summation of negative log-likelihoods over the training dataset"
+    },
+    {
+      "id": "Cross-Entropy Loss",
+      "type": "subnode",
+      "parent": "Loss Function",
+      "description": "Alternative definition for loss function in classification tasks"
+    },
+    {
+      "id": "Machine_Learning_Concepts",
+      "type": "major",
+      "parent": null,
+      "description": "Overview of key concepts in machine learning"
+    },
+    {
+      "id": "Loss_Functions",
+      "type": "subnode",
+      "parent": "Machine_Learning_Concepts",
+      "description": "Functions used to measure the performance of a model"
+    },
+    {
+      "id": "Cross_Entropy_Loss",
+      "type": "subnode",
+      "parent": "Loss_Functions",
+      "description": "Specific loss function for classification tasks"
+    },
+    {
+      "id": "Softmax_Cross_Entropy_Loss",
+      "type": "subnode",
+      "parent": "Cross_Entropy_Loss",
+      "description": "Variant of cross-entropy that uses softmax activation"
+    },
+    {
+      "id": "Gradient_Computation",
+      "type": "subnode",
+      "parent": "Loss_Functions",
+      "description": "Calculation of gradients for optimization purposes"
+    },
+    {
+      "id": "Machine Learning Basics",
+      "type": "major",
+      "parent": null,
+      "description": "Introduction to fundamental concepts in machine learning."
+    },
+    {
+      "id": "Loss Functions",
+      "type": "subnode",
+      "parent": "Machine Learning Basics",
+      "description": "Functions used to evaluate the performance of a model."
+    },
+    {
+      "id": "Cross Entropy Loss",
+      "type": "subnode",
+      "parent": "Loss Functions",
+      "description": "A loss function commonly used in classification problems."
+    },
+    {
+      "id": "Gradient Calculation",
+      "type": "subnode",
+      "parent": "Loss Functions",
+      "description": "Process of calculating gradients for optimization purposes."
+    },
+    {
+      "id": "Parameter Updates",
+      "type": "subnode",
+      "parent": "Gradient Calculation",
+      "description": "Methods to update model parameters based on calculated gradients."
+    },
+    {
+      "id": "Optimization Algorithms",
+      "type": "major",
+      "parent": null,
+      "description": "Techniques used to optimize the parameters of a machine learning model."
+    },
+    {
+      "id": "Newton's Method",
+      "type": "subnode",
+      "parent": "Optimization Algorithms",
+      "description": "An iterative method for finding roots of a real-valued function."
+    }
+  ],
+  "edges": [
+    {
+      "from": "Machine_Learning_Basics",
+      "to": "LMS_Algorithm",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Pretrained large language models",
+      "to": "Open up the blackbox of Transformers",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Machine_Learning_Models",
+      "to": "Design_Matrix_X",
+      "relationship": "related_to"
+    },
+    {
+      "from": "LearningRateAdjustment",
+      "to": "StochasticGradientDescent",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "Backpropagation",
+      "to": "Preliminaries on partial derivatives",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Modern Neural Networks",
+      "to": "Backpropagation",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Backpropagation",
+      "to": "Backward functions for basic modules",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Linear Regression",
+      "to": "Feature Selection",
+      "relationship": "depends_on"
+    },
+    {
+      "from": "Parameter Updates",
+      "to": "Stochastic Gradient Descent",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "LikelihoodFunction",
+      "to": "LogLikelihood",
+      "relationship": "related_to"
+    },
+    {
+      "from": "Independent components analysis",
+      "to": "ICA ambiguities",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Generalization and regularization",
+      "to": "Generalization",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "4.1 Gaussian discriminant analysis",
+      "to": "4.1.3 Discussion: GDA and logistic regression",
+      "relationship": "contains"
+    },
+    {
+      "from": "LinearRegression",
+      "to": "Underfitting",
+      "relationship": "depends_on"
+    },
+    {
+      "from": "General EM algorithms",
+      "to": "Other interpretation of ELBO",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "LogisticRegression",
+      "to": "LMSUpdateRule",
+      "relationship": "related_to"
+    },
+    {
+      "from": "LinearRegression",
+      "to": "Overfitting",
+      "relationship": "depends_on"
+    },
+    {
+      "from": "Modern Neural Networks",
+      "to": "Vectorization over training examples",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "6 Support vector machines",
+      "to": "6.1 Margins: intuition",
+      "relationship": "contains"
+    },
+    {
+      "from": "Supervised Learning Problem",
+      "to": "Classification Problem",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Conditional probability of y given x and \u03b8",
+      "to": "1.3 Probabilistic interpretation",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "CostFunction",
+      "to": "NormalEquations",
+      "relationship": "leads_to"
+    },
+    {
+      "from": "Unsupervised learning",
+      "to": "Independent components analysis",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Unsupervised learning",
+      "to": "Clustering and the k-means algorithm",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Machine Learning Basics",
+      "to": "Loss Functions",
+      "relationship": "depends_on"
+    },
+    {
+      "from": "3.2 Constructing GLMs",
+      "to": "3.2.1 Ordinary least squares",
+      "relationship": "contains"
+    },
+    {
+      "from": "Machine Learning Fundamentals",
+      "to": "Locally Weighted Linear Regression (LWLR)",
+      "relationship": "optional_reading"
+    },
+    {
+      "from": "Loss_Functions",
+      "to": "Cross_Entropy_Loss",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "Reinforcement learning",
+      "to": "Continuous state MDPs",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Machine_Learning_Models",
+      "to": "Probability_of_Data",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "Classification",
+      "to": "Binary Classification",
+      "relationship": "subtopic_of"
+    },
+    {
+      "from": "Function_Representation",
+      "to": "Cost_Function",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "LQR, DDP and LQG",
+      "to": "Finite-horizon MDPs",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Regression problem",
+      "to": "1.3 Probabilistic interpretation",
+      "relationship": "depends_on"
+    },
+    {
+      "from": "Loss_Functions",
+      "to": "Gradient_Computation",
+      "relationship": "contains"
+    },
+    {
+      "from": "EM algorithms",
+      "to": "General EM algorithms",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "I Supervised learning",
+      "to": "4 Generative learning algorithms",
+      "relationship": "contains"
+    },
+    {
+      "from": "ClassificationModel",
+      "to": "ProbabilisticAssumptions",
+      "relationship": "depends_on"
+    },
+    {
+      "from": "Unsupervised learning",
+      "to": "Self-supervised learning and foundation models",
+      "relationship": "related_to"
+    },
+    {
+      "from": "Supervised Learning Problem",
+      "to": "Hypothesis Function",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "LMS_Update_Rule",
+      "to": "Widrow_Hoff_Learning_Rule",
+      "relationship": "related_to"
+    },
+    {
+      "from": "Machine Learning Fundamentals",
+      "to": "Least Squares Regression",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "Logistic Regression Derivation",
+      "to": "Perceptron Algorithm",
+      "relationship": "related_to"
+    },
+    {
+      "from": "Backpropagation",
+      "to": "General strategy of backpropagation",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Sigmoid Function",
+      "to": "Derivative of Sigmoid",
+      "relationship": "related_to"
+    },
+    {
+      "from": "Gradient Definition",
+      "to": "Example Function",
+      "relationship": "related_to"
+    },
+    {
+      "from": "EM algorithms",
+      "to": "Jensen's inequality",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "1 Linear regression",
+      "to": "1.2 The normal equations",
+      "relationship": "contains"
+    },
+    {
+      "from": "Linear Regression",
+      "to": "Housing Example Dataset",
+      "relationship": "has_example"
+    },
+    {
+      "from": "Machine_Learning_Concepts",
+      "to": "Loss_Functions",
+      "relationship": "contains"
+    },
+    {
+      "from": "II Deep learning",
+      "to": "7 Deep learning",
+      "relationship": "contains"
+    },
+    {
+      "from": "Gradient Calculation",
+      "to": "Parameter Updates",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "I Supervised learning",
+      "to": "2 Classification and logistic regression",
+      "relationship": "contains"
+    },
+    {
+      "from": "Least Squares Revisited",
+      "to": "Closed Form Solution",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "LMS_Update_Rule",
+      "to": "Single_Training_Example",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "Generalization",
+      "to": "Sample complexity bounds (optional readings)",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "2 Classification and logistic regression",
+      "to": "2.1 Logistic regression",
+      "relationship": "contains"
+    },
+    {
+      "from": "Self-supervised learning and foundation models",
+      "to": "Pretraining methods in computer vision",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Logistic Regression",
+      "to": "Linear Regression Limitations",
+      "relationship": "depends_on"
+    },
+    {
+      "from": "I Supervised learning",
+      "to": "3 Generalized linear models",
+      "relationship": "contains"
+    },
+    {
+      "from": "Pretrained large language models",
+      "to": "Zero-shot learning and in-context learning",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "6 Support vector machines",
+      "to": "6.7 Regularization and the non-separable case (optional reading)",
+      "relationship": "contains"
+    },
+    {
+      "from": "1.2 The normal equations",
+      "to": "1.2.2 Least squares revisited",
+      "relationship": "contains"
+    },
+    {
+      "from": "LQR, DDP and LQG",
+      "to": "Linear Quadratic Regulation (LQR)",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "3 Generalized linear models",
+      "to": "3.2 Constructing GLMs",
+      "relationship": "contains"
+    },
+    {
+      "from": "Supervised Learning Problem",
+      "to": "Regression Problem",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Machine Learning Fundamentals",
+      "to": "Maximum Likelihood Estimation (MLE)",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "7 Deep learning",
+      "to": "7.3 Modules in Modern Neural Networks",
+      "relationship": "contains"
+    },
+    {
+      "from": "Softmax Function",
+      "to": "Probability Vector",
+      "relationship": "produces"
+    },
+    {
+      "from": "Learning a model for an MDP",
+      "to": "Connections between Policy and Value Iteration",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "4.2 Naive bayes (Option Reading)",
+      "to": "4.2.2 Event models for text classification",
+      "relationship": "contains"
+    },
+    {
+      "from": "4.1 Gaussian discriminant analysis",
+      "to": "4.1.1 The multivariate normal distribution",
+      "relationship": "contains"
+    },
+    {
+      "from": "LQR, DDP and LQG",
+      "to": "Linear Quadratic Gaussian (LQG)",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "LMSUpdateRule",
+      "to": "UpdateRule",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "Classification Problem",
+      "to": "Binary Classification",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "MachineLearningModels",
+      "to": "MaximumLikelihoodEstimation",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Regularization and model selection",
+      "to": "Bayesian statistics and regularization",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "CostFunctionJ",
+      "to": "GradientDescentAlgorithm",
+      "relationship": "related_to"
+    },
+    {
+      "from": "3 Generalized linear models",
+      "to": "3.1 The exponential family",
+      "relationship": "contains"
+    },
+    {
+      "from": "Backpropagation",
+      "to": "Back-propagation for MLPs",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "4 Generative learning algorithms",
+      "to": "4.2 Naive bayes (Option Reading)",
+      "relationship": "contains"
+    },
+    {
+      "from": "Cost_Function",
+      "to": "Ordinary_Least_Squares",
+      "relationship": "related_to"
+    },
+    {
+      "from": "Likelihood_Function",
+      "to": "Independence_Assumption",
+      "relationship": "depends_on"
+    },
+    {
+      "from": "NormalEquations",
+      "to": "GradientDescent",
+      "relationship": "alternative_method"
+    },
+    {
+      "from": "EM algorithms",
+      "to": "Mixture of Gaussians revisited",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "5 Kernel methods",
+      "to": "5.3 LMS with the kernel trick",
+      "relationship": "contains"
+    },
+    {
+      "from": "PartialDerivativeCalculation",
+      "to": "GradientDescentAlgorithm",
+      "relationship": "related_to"
+    },
+    {
+      "from": "LMS_Update_Rule",
+      "to": "Error_Term",
+      "relationship": "depends_on"
+    },
+    {
+      "from": "From non-linear dynamics to LQR",
+      "to": "Differential Dynamic Programming (DDP)",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Reinforcement Learning and Control",
+      "to": "Reinforcement learning",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Target variables and inputs relation",
+      "to": "1.3 Probabilistic interpretation",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "MachineLearning",
+      "to": "LogisticRegression",
+      "relationship": "contains"
+    },
+    {
+      "from": "Linear_Functions",
+      "to": "Parameters_Weights",
+      "relationship": "subtopic_of"
+    },
+    {
+      "from": "4.1 Gaussian discriminant analysis",
+      "to": "4.1.2 The Gaussian discriminant analysis model",
+      "relationship": "contains"
+    },
+    {
+      "from": "6 Support vector machines",
+      "to": "6.6 Optimal margin classifiers: the dual form (option reading)",
+      "relationship": "contains"
+    },
+    {
+      "from": "MachineLearningOverview",
+      "to": "LocallyWeightedLinearRegression",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Unsupervised learning",
+      "to": "EM algorithms",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "4 Generative learning algorithms",
+      "to": "4.1 Gaussian discriminant analysis",
+      "relationship": "contains"
+    },
+    {
+      "from": "Function_Representation",
+      "to": "Linear_Functions",
+      "relationship": "subtopic_of"
+    },
+    {
+      "from": "1 Linear regression",
+      "to": "1.1 LMS algorithm",
+      "relationship": "contains"
+    },
+    {
+      "from": "Loss Function",
+      "to": "Cross-Entropy Loss",
+      "relationship": "alternative_definition"
+    },
+    {
+      "from": "Continuous state MDPs",
+      "to": "Discretization",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "From non-linear dynamics to LQR",
+      "to": "Linearization of dynamics",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Parametric Algorithms",
+      "to": "Linear Regression",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "6 Support vector machines",
+      "to": "6.3 Functional and geometric margins (option reading)",
+      "relationship": "contains"
+    },
+    {
+      "from": "LocallyWeightedLinearRegression",
+      "to": "WeightsInLWLR",
+      "relationship": "depends_on"
+    },
+    {
+      "from": "Machine Learning Concepts",
+      "to": "Parametric Algorithms",
+      "relationship": "related_to"
+    },
+    {
+      "from": "Machine Learning",
+      "to": "Classification",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Machine Learning Concepts",
+      "to": "Classification Problem",
+      "relationship": "related_to"
+    },
+    {
+      "from": "2 Classification and logistic regression",
+      "to": "2.2 Digression: the perceptron learning algorithm",
+      "relationship": "contains"
+    },
+    {
+      "from": "1 Linear regression",
+      "to": "1.4 Locally weighted linear regression (optional reading)",
+      "relationship": "contains"
+    },
+    {
+      "from": "MachineLearningOverview",
+      "to": "LinearRegression",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Multi-class Classification",
+      "to": "Multinomial Distribution",
+      "relationship": "depends_on"
+    },
+    {
+      "from": "Batch_Gradient_Descent",
+      "to": "Gradient_Descent_Optimization",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "LinearRegression",
+      "to": "CostFunction",
+      "relationship": "depends_on"
+    },
+    {
+      "from": "Loss Function",
+      "to": "Negative Log-Likelihood",
+      "relationship": "sum_of"
+    },
+    {
+      "from": "1 Linear regression",
+      "to": "1.3 Probabilistic interpretation",
+      "relationship": "contains"
+    },
+    {
+      "from": "Regularization and model selection",
+      "to": "Regularization",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Classification",
+      "to": "Multi-class Classification",
+      "relationship": "subtopic_of"
+    },
+    {
+      "from": "Perceptron Algorithm",
+      "to": "Multi-class Classification",
+      "relationship": "depends_on"
+    },
+    {
+      "from": "Machine_Learning_Basics",
+      "to": "Function_Representation",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "EM algorithms",
+      "to": "EM for mixture of Gaussians",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Reinforcement learning",
+      "to": "Markov decision processes",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "2 Classification and logistic regression",
+      "to": "2.4 Another algorithm for maximizing \u03bb(\u03b8)",
+      "relationship": "contains"
+    },
+    {
+      "from": "Maximum_Likelihood_Estimation",
+      "to": "Log_Likelihood_Function",
+      "relationship": "defines"
+    },
+    {
+      "from": "Reinforcement learning",
+      "to": "Connections between Policy and Value Iteration (Optional)",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "UpdateRule",
+      "to": "GradientDescentAlgorithm",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "Unsupervised learning",
+      "to": "Principal components analysis",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Linear Regression Optimization",
+      "to": "Batch Gradient Descent Example",
+      "relationship": "has_example"
+    },
+    {
+      "from": "Non-parametric Algorithms",
+      "to": "Locally Weighted Linear Regression",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "Probabilistic Model",
+      "to": "Negative Log-Likelihood",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "Reinforcement learning",
+      "to": "Value iteration and policy iteration",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "3.2 Constructing GLMs",
+      "to": "3.2.2 Logistic regression",
+      "relationship": "contains"
+    },
+    {
+      "from": "7 Deep learning",
+      "to": "7.4 Backpropagation",
+      "relationship": "contains"
+    },
+    {
+      "from": "Multi-class Classification",
+      "to": "Softmax Function",
+      "relationship": "uses"
+    },
+    {
+      "from": "7 Deep learning",
+      "to": "7.2 Neural networks",
+      "relationship": "contains"
+    },
+    {
+      "from": "Continuous state MDPs",
+      "to": "Value function approximation",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "5 Kernel methods",
+      "to": "5.4 Properties of kernels",
+      "relationship": "contains"
+    },
+    {
+      "from": "Generalization",
+      "to": "The double descent phenomenon",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Machine_Learning_Models",
+      "to": "Conditional_Probability_Distribution",
+      "relationship": "depends_on"
+    },
+    {
+      "from": "Optimization Algorithms",
+      "to": "Newton's Method",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "Least Squares Regression",
+      "to": "Cost Function J(\u03b8)",
+      "relationship": "related_to"
+    },
+    {
+      "from": "Matrix Derivatives",
+      "to": "Gradient Definition",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "MaximumLikelihoodEstimation",
+      "to": "LikelihoodFunction",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Generalization",
+      "to": "Bias-variance tradeoff",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "6 Support vector machines",
+      "to": "6.4 The optimal margin classifier (option reading)",
+      "relationship": "contains"
+    },
+    {
+      "from": "LQR, DDP and LQG",
+      "to": "From non-linear dynamics to LQR",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Modern Neural Networks",
+      "to": "Modules in Modern Neural Networks",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "2 Classification and logistic regression",
+      "to": "2.3 Multi-class classification",
+      "relationship": "contains"
+    },
+    {
+      "from": "7 Deep learning",
+      "to": "7.1 Supervised learning with non-linear models",
+      "relationship": "contains"
+    },
+    {
+      "from": "Bias-variance tradeoff",
+      "to": "A mathematical decomposition (for regression)",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "StochasticGradientDescent",
+      "to": "BatchGradientDescent",
+      "relationship": "compared_to"
+    },
+    {
+      "from": "Machine_Learning_Models",
+      "to": "Maximum_Likelihood_Estimation",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "6 Support vector machines",
+      "to": "6.2 Notation (option reading)",
+      "relationship": "contains"
+    },
+    {
+      "from": "LocallyWeightedLinearRegression",
+      "to": "BandwidthParameter",
+      "relationship": "related_to"
+    },
+    {
+      "from": "MaximumLikelihoodEstimation",
+      "to": "GradientAscent",
+      "relationship": "uses"
+    },
+    {
+      "from": "MachineLearningConcepts",
+      "to": "FeatureSelection",
+      "relationship": "related_to"
+    },
+    {
+      "from": "5 Kernel methods",
+      "to": "5.1 Feature maps",
+      "relationship": "contains"
+    },
+    {
+      "from": "LearningRate",
+      "to": "GradientDescentAlgorithm",
+      "relationship": "depends_on"
+    },
+    {
+      "from": "Self-supervised learning and foundation models",
+      "to": "Pretrained large language models",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Reinforcement learning",
+      "to": "Learning a model for an MDP",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "6 Support vector machines",
+      "to": "6.5 Lagrange duality (optional reading)",
+      "relationship": "contains"
+    },
+    {
+      "from": "Least Squares Revisited",
+      "to": "Design Matrix",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Maximum Likelihood Estimation (MLE)",
+      "to": "Probabilistic Assumptions",
+      "relationship": "depends_on"
+    },
+    {
+      "from": "Error term distribution",
+      "to": "1.3 Probabilistic interpretation",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "Loss Functions",
+      "to": "Cross Entropy Loss",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "MachineLearningModels",
+      "to": "ClassificationModel",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Logistic Regression",
+      "to": "Hypothesis Formulation",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "Probability_of_Data",
+      "to": "Likelihood_Function",
+      "relationship": "defines"
+    },
+    {
+      "from": "Stochastic Gradient Descent",
+      "to": "SGD Algorithm Details",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "Regularization and model selection",
+      "to": "Implicit regularization effect (optional reading)",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Learning a model for an MDP",
+      "to": "Continuous state MDPs",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Regularization and model selection",
+      "to": "Model selection via cross validation",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Softmax Function",
+      "to": "Logits",
+      "relationship": "depends_on"
+    },
+    {
+      "from": "4.2 Naive bayes (Option Reading)",
+      "to": "4.2.1 Laplace smoothing",
+      "relationship": "contains"
+    },
+    {
+      "from": "Matrix Derivatives",
+      "to": "Example Function",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "GradientAscentRule",
+      "to": "LogisticLossFunction",
+      "relationship": "depends_on"
+    },
+    {
+      "from": "Self-supervised learning and foundation models",
+      "to": "Pretraining and adaptation",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "6 Support vector machines",
+      "to": "6.8 The SMO algorithm (optional reading)",
+      "relationship": "contains"
+    },
+    {
+      "from": "Independent components analysis",
+      "to": "Densities and linear transformations",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Independent components analysis",
+      "to": "ICA algorithm",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Least Squares Revisited",
+      "to": "Target Vector",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "Logistic Regression",
+      "to": "Sigmoid Function",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "Cross_Entropy_Loss",
+      "to": "Softmax_Cross_Entropy_Loss",
+      "relationship": "variant_of"
+    },
+    {
+      "from": "Linear Regression Optimization",
+      "to": "Gradient Descent Convergence",
+      "relationship": "depends_on"
+    },
+    {
+      "from": "LogisticRegression",
+      "to": "GradientAscentRule",
+      "relationship": "has_subtopic"
+    },
+    {
+      "from": "5 Kernel methods",
+      "to": "5.2 LMS (least mean squares) with features",
+      "relationship": "contains"
+    },
+    {
+      "from": "MachineLearningConcepts",
+      "to": "LocallyWeightedLinearRegression",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "I Supervised learning",
+      "to": "1 Linear regression",
+      "relationship": "contains"
+    },
+    {
+      "from": "1.2 The normal equations",
+      "to": "1.2.1 Matrix derivatives",
+      "relationship": "contains"
+    }
+  ]
+}
