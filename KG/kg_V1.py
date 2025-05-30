@@ -222,7 +222,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 # Configure Ollama client
-ollama_client = ollama.Client(host="http://172.180.9.187:11434")
+ollama_client = ollama.Client(host="http://172.180.9.187:11435")
 
 # Path to the input text file
 file_path = "./default_pdfs/229.txt"

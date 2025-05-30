@@ -22,7 +22,7 @@ const FileUploadWidget = ({ onUploadSuccess }) => {
            return;
       }
 
-      const MAX_SIZE_MB = 20;
+      const MAX_SIZE_MB = 20; 
       const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
       if (file.size > MAX_SIZE_BYTES) {
           setStatusMessage(`Error: File exceeds ${MAX_SIZE_MB}MB limit.`);
@@ -66,7 +66,7 @@ const FileUploadWidget = ({ onUploadSuccess }) => {
       const response = await uploadFile(formData);
 
       setUploadStatus('success');
-      setStatusMessage(response.data.message || 'Upload successful!');
+      setStatusMessage(response.data.message || 'Upload successful! Background processing started.');
       console.log('Upload successful:', response.data);
 
       setSelectedFile(null);
@@ -81,9 +81,8 @@ const FileUploadWidget = ({ onUploadSuccess }) => {
       setTimeout(() => {
           // Check if status is still success before clearing
           setUploadStatus(prevStatus => prevStatus === 'success' ? '' : prevStatus);
-          setStatusMessage(prevMsg => prevMsg === (response.data.message || 'Upload successful!') ? '' : prevMsg);
-      }, 4000);
-
+          setStatusMessage(prevMsg => prevMsg === (response.data.message || 'Upload successful! Background processing started.') ? '' : prevMsg);
+      }, 5000);
 
     } catch (err) {
       console.error("Upload Error:", err.response || err);
@@ -93,6 +92,10 @@ const FileUploadWidget = ({ onUploadSuccess }) => {
           console.warn("FileUpload: Received 401 during upload.");
           // Consider calling a logout function passed via props or context
       }
+      setTimeout(() => {
+             setUploadStatus(prevStatus => prevStatus === 'error' ? '' : prevStatus);
+             setStatusMessage(prevMsg => prevMsg === (err.response?.data?.message || 'Upload failed. Please check the file or try again.') ? '' : prevMsg);
+        }, 10000);
     }
   };
 

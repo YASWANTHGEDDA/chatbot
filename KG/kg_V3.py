@@ -7,6 +7,7 @@ from tqdm import tqdm
 import logging
 import concurrent.futures # Added for parallelization
 import time # Optional: for adding delays if needed
+import requests
 
 # Set up logging to capture warnings and errors
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 # Configure Ollama client
 # Ensure this client instance is thread-safe or create new ones if needed.
 # The official ollama-python client is generally thread-safe for requests.
-ollama_client = ollama.Client(host="http://172.180.9.187:11434")
+ollama_client = ollama.Client(host="http://172.180.9.187:11435")
 
 # Path to the text file (previously PDF)
 file_path = "./default_pdfs/229.txt"
@@ -214,6 +215,24 @@ def save_graph(graph, filename="kg3.json"): # Changed default filename slightly
     except Exception as e:
         logger.error(f"Error saving graph: {e}")
 
+# Add configuration for Notebook backend
+NOTEBOOK_BACKEND_URL = "http://localhost:5000"  # Update with actual Notebook backend URL
+
+def send_kg_to_notebook(graph_data):
+    """Send knowledge graph data to Notebook backend."""
+    try:
+        response = requests.post(
+            f"{NOTEBOOK_BACKEND_URL}/kg/update",
+            json={'graph_data': graph_data},
+            headers={'Content-Type': 'application/json'}
+        )
+        response.raise_for_status()
+        logger.info("Successfully sent KG data to Notebook backend")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send KG data to Notebook backend: {str(e)}")
+        return False
+
 # --- Main Execution Logic ---
 
 # Split text into chunks
@@ -260,7 +279,25 @@ if all_graphs:
     final_graph = merge_graphs(all_graphs) # Pass the collected valid graphs
     logger.info("Final Merged Graph (Nodes: {}, Edges: {}):".format(len(final_graph.get('nodes', [])), len(final_graph.get('edges', []))))
     save_graph(final_graph,'kg3.json')
+    print("Knowledge Graph saved to: kg3.json in the KG directory.")
 else:
     logger.error("No valid graphs were generated or processed successfully.")
+
+# Modify the main execution logic to send data to Notebook
+# After processing all chunks and before exiting
+all_graphs = [graph for graph in results if graph is not None]
+
+# Combine all graphs into a single knowledge base
+combined_kg = {}
+for graph in all_graphs:
+    combined_kg.update(graph)
+
+# Send the combined KG to Notebook backend
+if combined_kg:
+    logger.info("Sending combined knowledge graph to Notebook backend...")
+    if send_kg_to_notebook(combined_kg):
+        logger.info("Knowledge graph integration complete")
+    else:
+        logger.warning("Knowledge graph integration failed")
 
 logger.info("Knowledge graph generation process finished.")

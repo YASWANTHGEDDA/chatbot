@@ -690,4 +690,73 @@ def generate_document_analysis(filename: str, analysis_type: str) -> tuple[str |
         return f"Error generating analysis: AI model failed ({type(e).__name__}). Check logs for details.", None
 # --- END MODIFICATION ---
 
+def split_into_chunks(text, chunk_size=2048, overlap=256):
+    """Split text into overlapping chunks for processing."""
+    chunks = []
+    start = 0
+    text_len = len(text)
+    while start < text_len:
+        end = min(start + chunk_size, text_len)
+        chunks.append(text[start:end])
+        next_start = end - overlap
+        start = max(next_start, start + 1) if end < text_len else end
+    return chunks
+
+def merge_graphs(graphs):
+    """Merge multiple knowledge graphs into a single graph."""
+    final_nodes = {}
+    final_edges = set()  # Use a set to automatically handle duplicate edges
+
+    for graph in graphs:
+        if not isinstance(graph, dict) or 'nodes' not in graph or 'edges' not in graph:
+            continue
+
+        # Process nodes
+        if isinstance(graph['nodes'], list):
+            for node in graph['nodes']:
+                if not isinstance(node, dict):
+                    continue
+                node_id = node.get('id')
+                if not node_id or not isinstance(node_id, str):
+                    continue
+                if node_id not in final_nodes:
+                    final_nodes[node_id] = node
+                else:
+                    # Merge descriptions if needed
+                    existing_desc = final_nodes[node_id].get('description', '')
+                    new_desc = node.get('description', '')
+                    if isinstance(new_desc, str) and len(new_desc) > len(existing_desc):
+                        final_nodes[node_id]['description'] = new_desc
+                    # Update parent and type if previously null
+                    if final_nodes[node_id].get('parent') is None and node.get('parent') is not None:
+                        final_nodes[node_id]['parent'] = node.get('parent')
+                    if final_nodes[node_id].get('type') is None and node.get('type') is not None:
+                        final_nodes[node_id]['type'] = node.get('type')
+
+        # Process edges
+        if isinstance(graph['edges'], list):
+            for edge in graph['edges']:
+                if not isinstance(edge, dict):
+                    continue
+                if not all(k in edge for k in ['from', 'to', 'relationship']):
+                    continue
+
+                from_node = edge['from']
+                to_node = edge['to']
+                relationship = edge['relationship']
+
+                if not all(isinstance(x, str) for x in [from_node, to_node, relationship]):
+                    continue
+
+                edge_tuple = (from_node, to_node, relationship)
+                final_edges.add(edge_tuple)
+
+    # Convert the set of edge tuples back to a list of dictionaries
+    final_edge_list = [{"from": e[0], "to": e[1], "relationship": e[2]} for e in final_edges]
+
+    return {
+        "nodes": list(final_nodes.values()),
+        "edges": final_edge_list
+    }
+
 # --- END OF FILE ai_core.py ---

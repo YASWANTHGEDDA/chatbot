@@ -92,7 +92,22 @@ const ChatPage = ({ setIsAuthenticated }) => {
     }, [userId, fileRefreshTrigger]); // Re-check when userId is set or file list might change
 
     // --- Callback Definitions ---
-    const triggerFileRefresh = useCallback(() => setFileRefreshTrigger(prev => prev + 1), []);
+      const triggerFileRefresh = useCallback(() => {
+        setFileRefreshTrigger(prev => prev + 1);
+        // After file upload, check if files exist and enable RAG
+        getUserFiles().then(response => {
+            const filesExist = response.data && response.data.length > 0;
+            setHasFiles(filesExist);
+            setIsRagEnabled(filesExist); // Always enable RAG if files exist
+            if (filesExist) {
+                setError('File uploaded and processing started. RAG is now enabled. You can ask questions about your PDF.');
+            } else {
+                setError('File upload failed or no files found.');
+            }
+        }).catch(() => {
+            setError('Could not refresh file list after upload.');
+        });
+    }, []);
     const handlePromptSelectChange = useCallback((newId) => {
         setCurrentSystemPromptId(newId); setEditableSystemPromptText(getPromptTextById(newId));
         setError(prev => prev && (prev.includes("Session invalid") || prev.includes("Critical Error")) ? prev : `Assistant mode changed.`);
@@ -355,7 +370,7 @@ const ChatPage = ({ setIsAuthenticated }) => {
                 <footer className="input-area">
                     <textarea
                         value={inputText} onChange={(e) => setInputText(e.target.value)} onKeyDown={handleEnterKey}
-                        placeholder="Ask your tutor..." rows="1" disabled={isProcessing} aria-label="Chat input"
+                        placeholder={isRagEnabled ? "Ask about your uploaded PDF..." : "Upload a PDF and enable RAG to ask about it."} rows="1" disabled={isProcessing} aria-label="Chat input"
                     />
                     <div className="rag-toggle-container" title={!hasFiles ? "Upload files to enable RAG" : (isRagEnabled ? "Disable RAG (Retrieval-Augmented Generation)" : "Enable RAG (Retrieval-Augmented Generation)")}>
                         <input type="checkbox" id="rag-toggle" checked={isRagEnabled} onChange={handleRagToggle}

@@ -48,7 +48,14 @@ try:
     logger.info(f"Upload directory ensured: {app.config['UPLOAD_FOLDER']}")
 except OSError as e:
     logger.error(f"Could not create upload directory {app.config['UPLOAD_FOLDER']}: {e}", exc_info=True)
-    # Decide if critical? App can run without uploads. Log and continue for now.
+
+# Ensure KG directory exists
+KG_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'KG'))
+try:
+    os.makedirs(KG_FOLDER, exist_ok=True)
+    logger.info(f"KG directory ensured: {KG_FOLDER}")
+except OSError as e:
+    logger.error(f"Could not create KG directory {KG_FOLDER}: {e}", exc_info=True)
 
 # --- Application Initialization ---
 # Flags to track initialization status
@@ -176,6 +183,121 @@ def kg_data():
     except Exception as e:
         logger.error(f"Error serving KG JSON data: {e}", exc_info=True)
         return "Error loading KG JSON data.", 500
+
+@app.route('/generate-kg', methods=['POST'])
+def generate_knowledge_graph():
+    """Generate a knowledge graph from the provided document."""
+    try:
+        if not request.json or 'document_id' not in request.json:
+            return jsonify({"error": "No document ID provided"}), 400
+
+        document_id = request.json['document_id']
+        
+        # Get document text from cache or load it
+        if document_id in ai_core.document_texts_cache:
+            document_text = ai_core.document_texts_cache[document_id]
+        else:
+            # Try to load the document text
+            try:
+                document_text = ai_core.load_document_text(document_id)
+            except Exception as e:
+                logger.error(f"Error loading document text: {e}", exc_info=True)
+                return jsonify({"error": "Could not load document text"}), 500
+
+        # Split text into chunks
+        chunks = ai_core.split_into_chunks(document_text, chunk_size=2048, overlap=256)
+        
+        # Process chunks to generate knowledge graph
+        all_graphs = []
+        for i, chunk in enumerate(chunks):
+            logger.debug(f"Processing chunk {i+1}/{len(chunks)} for KG generation.")
+            try:
+                # Use the LLM to generate graph data for this chunk
+                response = ai_core.llm.invoke(
+                    model=config.OLLAMA_MODEL,
+                    messages=[{
+                        "role": "user",
+                        "content": f"""You are an expert in knowledge graph creation. Create a graph-based memory map from this text. 
+                        Identify major topics as top-level nodes, subtopics as subnodes, and relationships between nodes.
+                        Output as JSON with "nodes" and "edges" sections. Ensure the output is ONLY the JSON object, with no surrounding text or markdown.
+                        
+                        Text:
+                        {chunk}
+                        
+                        Output format:
+                        {{
+                            "nodes": [
+                                {{"id": "Node Name", "type": "major/subnode", "parent": "Parent Node (if subnode) or null", "description": "Short description (max 50 words)"}},
+                                ...
+                            ],
+                            "edges": [
+                                {{"from": "Node A", "to": "Node B", "relationship": "subtopic/depends_on/related_to"}},
+                                ...
+                            ]
+                        }}"""
+                    }],
+                    format="json",
+                    options={"num_ctx": 4096, "temperature": 0.3}
+                )
+                
+                # Parse and validate the response
+                content = response.get('message', {}).get('content', '')
+                logger.debug(f"Raw LLM response for chunk {i+1}: {content[:500]}...") # Log start of response
+
+                if not content:
+                    logger.warning(f"Empty response content received for chunk {i+1}.")
+                    continue
+
+                try:
+                    # Attempt to strip potential markdown code fences if present (added robustness)
+                    if content.strip().startswith("```json"):
+                        content = content.strip()[7:-3].strip()
+                    elif content.strip().startswith("```"):
+                         content = content.strip()[3:-3].strip()
+
+                    graph_data = json.loads(content)
+                    logger.debug(f"Successfully parsed JSON for chunk {i+1}.")
+
+                    if isinstance(graph_data, dict) and 'nodes' in graph_data and 'edges' in graph_data and isinstance(graph_data['nodes'], list) and isinstance(graph_data['edges'], list):
+                        all_graphs.append(graph_data)
+                        logger.debug(f"Chunk {i+1} produced a valid graph structure.")
+                    else:
+                        logger.warning(f"Invalid graph structure or types received for chunk {i+1}. Data keys: {graph_data.keys() if isinstance(graph_data, dict) else 'Not a dict'}.") # Log keys if dict
+                        # Optionally log the problematic content for debugging
+                        # logger.debug(f"Problematic content for chunk {i+1}: {content}")
+
+                except json.JSONDecodeError as e:
+                    logger.error(f"JSON parsing error for chunk {i+1}: {e}")
+                    logger.debug(f"Content that caused parsing error for chunk {i+1}: {content}") # Log problematic content
+                    continue # Skip this chunk if JSON is invalid
+            
+            except Exception as e:
+                logger.error(f"Error processing chunk {i+1}: {e}", exc_info=True)
+                continue # Skip this chunk on any error
+
+        logger.info(f"Finished processing chunks. Successfully generated valid graphs for {len(all_graphs)} chunks.")
+
+        # Merge all graphs
+        if all_graphs:
+            final_graph = ai_core.merge_graphs(all_graphs)
+            
+            # Save the graph
+            kg_path = os.path.join(KG_FOLDER, 'kg1.json')
+            with open(kg_path, 'w') as f:
+                json.dump(final_graph, f, indent=2)
+            
+            return jsonify({
+                "status": "success",
+                "message": "Knowledge graph generated successfully",
+                "nodes_count": len(final_graph.get('nodes', [])),
+                "edges_count": len(final_graph.get('edges', []))
+            })
+        else:
+            return jsonify({"error": "No valid graphs were generated"}), 500
+
+    except Exception as e:
+        logger.error(f"Error generating knowledge graph: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
 # Static files (CSS, JS) are handled automatically by Flask if static_folder is set correctly
 

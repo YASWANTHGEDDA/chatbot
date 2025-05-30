@@ -5,6 +5,7 @@ const { tempAuth } = require('../middleware/authMiddleware');
 const ChatHistory = require('../models/ChatHistory');
 const { v4: uuidv4 } = require('uuid');
 const { generateContentWithHistory } = require('../services/geminiService');
+const notebookService = require('../services/notebookService');
 
 const router = express.Router();
 
@@ -84,6 +85,36 @@ router.post('/message', tempAuth, async (req, res) => {
     if (!sessionId || typeof sessionId !== 'string') return res.status(400).json({ message: 'Session ID required.' });
     if (!Array.isArray(history)) return res.status(400).json({ message: 'Invalid history format.'});
     const useRAG = !!isRagEnabled; // Ensure boolean
+
+    // --- Intent Detection for Greetings/Small Talk ---
+    const greetings = ['hi', 'hello', 'hey', 'good morning', 'good evening', 'how are you', 'what\'s up', 'how is it going'];
+    const lowerMsg = message.trim().toLowerCase();
+    const isGreeting = greetings.some(greet => lowerMsg.startsWith(greet) || lowerMsg === greet);
+
+    if (isGreeting) {
+        try {
+            // Prepare minimal history for Gemini
+            const historyForGemini = [
+                ...history,
+                { role: "user", parts: [{ text: message.trim() }] }
+            ];
+            const geminiResponseText = await generateContentWithHistory(historyForGemini, systemPrompt);
+            const modelResponseMessage = {
+                role: 'model',
+                parts: [{ text: geminiResponseText }],
+                timestamp: new Date()
+            };
+            return res.status(200).json({ reply: modelResponseMessage });
+        } catch (error) {
+            console.error(`!!! Error processing greeting/small talk for session ${sessionId}:`, error);
+            let statusCode = error.status || 500;
+            let clientMessage = error.message || "Failed to get response from AI service.";
+            if (error.originalError && statusCode === 500) {
+                clientMessage = "An internal server error occurred while processing the AI response.";
+            }
+            return res.status(statusCode).json({ message: clientMessage });
+        }
+    }
 
     console.log(`>>> POST /api/chat/message: User=${userId}, Session=${sessionId}, RAG=${useRAG} (TEMP AUTH)`);
 
@@ -272,6 +303,94 @@ router.get('/session/:sessionId', tempAuth, async (req, res) => {
     } catch (error) {
         console.error(`Error fetching chat session ${sessionId} for user ${userId}:`, error);
         res.status(500).json({ message: 'Failed to retrieve chat session details.' });
+    }
+});
+
+router.post('/', tempAuth, async (req, res) => {
+    try {
+        const { message } = req.body;
+        const userId = req.user.id;
+
+        if (!message) {
+            return res.status(400).json({ error: 'Message is required' });
+        }
+
+        // 1. Query Notebook backend for enhanced context
+        let notebookResponse;
+        try {
+            notebookResponse = await notebookService.queryNotebook(userId, message);
+        } catch (notebookError) {
+            console.warn('Notebook query failed:', notebookError);
+            // Continue without notebook response
+        }
+
+        // 2. Query Python RAG service
+        let ragResponse;
+        try {
+            ragResponse = await queryPythonRagService(userId, message);
+        } catch (ragError) {
+            console.warn('RAG query failed:', ragError);
+            // Continue without RAG response
+        }
+
+        // 3. Prepare context from both sources
+        let contextText = '';
+        if (notebookResponse) {
+            contextText += `Notebook Context:\n${notebookResponse.answer}\n\n`;
+            if (notebookResponse.thinking) {
+                contextText += `Reasoning:\n${notebookResponse.thinking}\n\n`;
+            }
+        }
+        if (ragResponse && ragResponse.context) {
+            contextText += `RAG Context:\n${ragResponse.context}\n\n`;
+        }
+
+        // 4. Generate response using Gemini
+        const chatHistory = await ChatHistory.find({ userId }).sort({ timestamp: 1 });
+        const formattedHistory = chatHistory.map(msg => ({
+            role: msg.role,
+            parts: [{ text: msg.content }]
+        }));
+
+        // Add current message to history
+        formattedHistory.push({
+            role: 'user',
+            parts: [{ text: message }]
+        });
+
+        const response = await generateContentWithHistory(
+            formattedHistory,
+            contextText || null,
+            ragResponse?.references || []
+        );
+
+        // 5. Save the interaction
+        const newMessage = new ChatHistory({
+            userId,
+            role: 'user',
+            content: message,
+            timestamp: new Date()
+        });
+
+        const newResponse = new ChatHistory({
+            userId,
+            role: 'assistant',
+            content: response,
+            timestamp: new Date()
+        });
+
+        await Promise.all([newMessage.save(), newResponse.save()]);
+
+        // 6. Send response
+        res.json({
+            response,
+            references: ragResponse?.references || [],
+            notebookReferences: notebookResponse?.references || []
+        });
+
+    } catch (error) {
+        console.error('Chat error:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
