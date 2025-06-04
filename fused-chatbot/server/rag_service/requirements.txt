@@ -1,6 +1,6 @@
 flask==3.0.2
 langchain==0.3.19
-langchain-community==0.3.38
+langchain-community==0.3.24
 langchain-core==0.3.43
 faiss-cpu==1.7.4
 sentence-transformers==2.5.1

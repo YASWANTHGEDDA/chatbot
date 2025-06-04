@@ -13,7 +13,7 @@ DEBUG = os.getenv('RAG_SERVICE_DEBUG', 'False').lower() == 'true'
 
 # File upload configuration
 UPLOAD_DIR = os.getenv('UPLOAD_DIR', 'uploads')
-MAX_CONTENT_LENGTH = int(os.getenv('MAX_CONTENT_LENGTH', '16 * 1024 * 1024'))  # 16MB
+MAX_CONTENT_LENGTH = int(os.getenv('MAX_CONTENT_LENGTH', str(16 * 1024 * 1024)))
 ALLOWED_EXTENSIONS = {
     'pdf': '.pdf',
     'docx': '.docx',

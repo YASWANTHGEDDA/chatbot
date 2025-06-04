@@ -724,10 +724,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 mindmapContainer.style.display = 'block'; // Show the SVG container
                 console.log("Mindmap container display set to block.");
                 try {
-                    if (typeof window.markmap !== 'object' || !window.markmap.Markmap || !window.markmap.Toolbar || !window.d3 || !window.markmap.Transformer) {
-                         throw new Error("Markmap library, D3, or Transformer not loaded.");
+                    // Assuming Markmap libraries are loaded via script tags
+                    const { Markmap, Toolbar, Transformer } = window.markmap; // Get necessary components from window.markmap
+
+                    console.log("Checking window.markmap components:", { Markmap, Toolbar, Transformer });
+                    if (typeof Transformer !== 'function') {
+                        console.error("window.markmap.Transformer is not a constructor.", Transformer);
+                        throw new Error("Markmap Transformer component not found or is not a constructor.");
                     }
-                    const { Markmap, Toolbar, Transformer } = window.markmap; // Get Transformer too
 
                      // Transform markdown to markmap data structure
                      const transformer = new Transformer();
@@ -922,7 +926,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 setChatStatus("Voice input error. Check mic?", 'warning'); // Use the new function
                 stopListeningUI(); // Reset UI if start fails
             }
-        } 
+        }
     }
 
     function startListeningUI() {

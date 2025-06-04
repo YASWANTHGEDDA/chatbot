@@ -8,7 +8,7 @@ from config import (
 )
 # Import necessary functions and global variables
 from ai_core import (
-    initialize_ai_components, load_vector_store, extract_text_from_pdf,
+    initialize_ai_components, load_vector_store, extract_text_from_file,
     create_chunks_from_text, add_documents_to_vector_store, save_vector_store,
     vector_store, embeddings, llm  # Import globals for consistency
 )
@@ -152,7 +152,7 @@ def build_initial_faiss_index():
     for filename in new_pdfs_to_process:
         pdf_path = os.path.join(DEFAULT_PDFS_FOLDER, filename)
         logger.info(f"Processing '{filename}'...")
-        text = extract_text_from_pdf(pdf_path)
+        text = extract_text_from_file(pdf_path)
         if text:
             logger.debug(f"Extracted text from '{filename}'. Creating chunks...")
             documents = create_chunks_from_text(text, filename)

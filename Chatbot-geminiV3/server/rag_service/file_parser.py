@@ -28,18 +28,8 @@ if not logger.hasHandlers():
 
 
 def parse_pdf(file_path):
-    """Extracts text content from a PDF file using pypdf. Rejects files >20MB."""
+    """Extracts text content from a PDF file using pypdf."""
     if not pypdf: return None # Check if library loaded
-    # --- File size check ---
-    max_size_mb = 20
-    try:
-        file_size = os.path.getsize(file_path)
-        if file_size > max_size_mb * 1024 * 1024:
-            logger.warning(f"PDF file {file_path} is too large ({file_size / (1024*1024):.2f} MB). Max allowed is {max_size_mb} MB.")
-            return None
-    except Exception as e:
-        logger.error(f"Could not check file size for {file_path}: {e}")
-        return None
     text = ""
     try:
         reader = pypdf.PdfReader(file_path)
@@ -116,17 +106,7 @@ except ImportError:
 
 
 def parse_file(file_path):
-    """Parses a file based on its extension, returning text content or None. Rejects files >20MB."""
-    # --- File size check for all types ---
-    max_size_mb = 20
-    try:
-        file_size = os.path.getsize(file_path)
-        if file_size > max_size_mb * 1024 * 1024:
-            logger.warning(f"File {file_path} is too large ({file_size / (1024*1024):.2f} MB). Max allowed is {max_size_mb} MB.")
-            return None
-    except Exception as e:
-        logger.error(f"Could not check file size for {file_path}: {e}")
-        return None
+    """Parses a file based on its extension, returning text content or None."""
     _, ext = os.path.splitext(file_path)
     ext = ext.lower()
     logger.debug(f"Attempting to parse file: {os.path.basename(file_path)} (Extension: {ext})")

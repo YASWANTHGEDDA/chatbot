@@ -1,0 +1,674 @@
+{
+  "nodes": [
+    {
+      "id": "1",
+      "type": "major",
+      "parent": null,
+      "description": "DevOps Overview"
+    },
+    {
+      "id": "2",
+      "type": "subnode",
+      "parent": "1",
+      "description": "Phases of Iterative & Incremental Development Model"
+    },
+    {
+      "id": "3",
+      "type": "subnode",
+      "parent": "2",
+      "description": "Advantages of V-shaped model: High quality, systematic approach"
+    },
+    {
+      "id": "4",
+      "type": "subnode",
+      "parent": "1",
+      "description": "Deﬁne the project scope and its feasibility."
+    },
+    {
+      "id": "5",
+      "type": "subnode",
+      "parent": "4",
+      "description": "Establish a high-level understanding of the system to be built."
+    },
+    {
+      "id": "6",
+      "subnode": "5",
+      "description": "Advantages of Waterfall Model",
+      "type": "advantage",
+      "parent": "2"
+    },
+    {
+      "id": "7",
+      "subnode": "5",
+      "description": "Reﬁne the project vision and requirements.",
+      "type": "disadvantage",
+      "parent": "6"
+    },
+    {
+      "id": "8",
+      "subnode": "4",
+      "description": "Establish a robust architecture for the system.",
+      "type": "subnode",
+      "parent": "6"
+    },
+    {
+      "id": "9",
+      "subnode": "8",
+      "description": "Advantages of V-Model",
+      "type": "advantage",
+      "parent": "2"
+    },
+    {
+      "id": "10",
+      "subnode": "8",
+      "description": "Build the software incrementally based on the established architecture.",
+      "type": "disadvantage",
+      "parent": "9"
+    },
+    {
+      "id": "DevOps",
+      "type": "major",
+      "parent": null,
+      "description": "DevOps is a cultural approach combining development and operations to streamline software delivery."
+    },
+    {
+      "id": "Developers",
+      "type": "subnode",
+      "parent": "DevOps",
+      "description": "Focus on developing new features quickly."
+    },
+    {
+      "id": "Operators",
+      "type": "subnode",
+      "parent": "DevOps",
+      "description": "Maintain infrastructure and ensure smooth operation."
+    },
+    {
+      "id": "How DevOps Works",
+      "type": "major",
+      "parent": null,
+      "description": "Explains the integration of development and operations teams for efficient application lifecycle management."
+    },
+    {
+      "id": "Teams",
+      "type": "subnode",
+      "parent": "How DevOps Works",
+      "description": "Includes quality assurance and security teams in some models."
+    },
+    {
+      "id": "Integration",
+      "type": "subnode",
+      "parent": "How DevOps Works",
+      "description": "Automates manual processes to speed up development and deployment."
+    },
+    {
+      "id": "Technology Stack",
+      "type": "subnode",
+      "parent": "How DevOps Works",
+      "description": "Tools used for efficient operation and evolution of applications."
+    },
+    {
+      "id": "11",
+      "type": "subnode",
+      "parent": "9",
+      "description": "Develop a fully functional system."
+    },
+    {
+      "id": "12",
+      "type": "subnode",
+      "parent": "2",
+      "description": "Transition Phase"
+    },
+    {
+      "id": "13",
+      "type": "subnode",
+      "parent": "12",
+      "description": "Deploy the system into the production environment."
+    },
+    {
+      "id": "14",
+      "type": "subnode",
+      "parent": "12",
+      "description": "Ensure the system meets the users' needs."
+    },
+    {
+      "id": "15",
+      "type": "major",
+      "parent": null,
+      "description": "Advantages of Iterative & Incremental model"
+    },
+    {
+      "id": "16",
+      "type": "subnode",
+      "parent": "15",
+      "description": "Any change in the requirement can be easily done and would not cost as there is a scope of incorporating the new requirement in the next iteration."
+    },
+    {
+      "id": "17",
+      "type": "subnode",
+      "parent": "15",
+      "description": "Risk is analyzed & identiﬁed in the iterations."
+    },
+    {
+      "id": "18",
+      "type": "subnode",
+      "parent": "15",
+      "description": "Defects are detected at an early stage."
+    },
+    {
+      "id": "19",
+      "type": "subnode",
+      "parent": "15",
+      "description": "As the product is divided into smaller chunks it is easy to manage the product."
+    },
+    {
+      "id": "20",
+      "type": "major",
+      "parent": null,
+      "description": "Disadvantages of Iterative & Incremental model"
+    },
+    {
+      "id": "21",
+      "type": "subnode",
+      "parent": "20",
+      "description": "Complete requirements and understanding of a product are required to break down and build incrementally."
+    },
+    {
+      "id": "22",
+      "type": "major",
+      "parent": null,
+      "description": "Big Bang Model"
+    },
+    {
+      "id": "23",
+      "type": "subnode",
+      "parent": "22",
+      "description": "does not have any deﬁned process."
+    },
+    {
+      "id": "24",
+      "type": "subnode",
+      "parent": "22",
+      "description": "Money and efforts are put together as the input and output come as a developed product which might be or might not be the same as what the customer needs."
+    },
+    {
+      "id": "25",
+      "type": "subnode",
+      "parent": "22",
+      "description": "Big Bang Model does not require much planning and scheduling."
+    },
+    {
+      "id": "26",
+      "type": "subnode",
+      "parent": "22",
+      "description": "The developer does the requirement analysis & coding and develops the product as per his understanding."
+    },
+    {
+      "id": "27",
+      "type": "major",
+      "parent": null,
+      "description": "Advantages of Big Bang model"
+    },
+    {
+      "id": "28",
+      "type": "subnode",
+      "parent": "27",
+      "description": "It’s a very simple Model."
+    },
+    {
+      "id": "29",
+      "type": "subnode",
+      "parent": "27",
+      "description": "Less Plan"
+    },
+    {
+      "id": "Software Deployment",
+      "type": "major",
+      "parent": null,
+      "description": "The process of deploying software systems."
+    },
+    {
+      "id": "Maintenance",
+      "type": "major",
+      "parent": "Software Deployment",
+      "description": "Ongoing activity ensuring system stability and updates."
+    },
+    {
+      "id": "Agile Model",
+      "type": "major",
+      "parent": "Maintenance",
+      "description": "Adaptive approach for software development allowing changes."
+    },
+    {
+      "id": "Advantages of Agile Model",
+      "type": "subnode",
+      "parent": "Agile Model",
+      "description": "Flexibility, easy addition of features, customer satisfaction through feedback."
+    },
+    {
+      "id": "Disadvantages of Agile Model",
+      "type": "subnode",
+      "parent": "Agile Model",
+      "description": "Lack of documentation, need for skilled resources, unclear requirements leading to project failure."
+    },
+    {
+      "id": "Types of Agile Frameworks",
+      "type": "major",
+      "parent": "Agile Model",
+      "description": "Choosing framework based on team, workflow, scale, etc."
+    },
+    {
+      "id": "Scrum Overview",
+      "type": "subnode",
+      "parent": "Types of Agile Frameworks",
+      "description": "Scrum model using tasks in smaller teams inspired by rugby."
+    },
+    {
+      "id": "Three Aspects of Scrum",
+      "type": "subnode",
+      "parent": "Scrum Overview",
+      "description": "Scrum Master, Product Owner, Development Team roles and their responsibilities."
+    },
+    {
+      "id": "Scrum Key Roles",
+      "type": "subnode",
+      "parent": "Three Aspects of Scrum",
+      "description": "Roles include Product Owner, Scrum Master, Development Team in delivering product incrementally."
+    },
+    {
+      "id": "Key Artifacts",
+      "type": "subnode",
+      "parent": "Scrum Key Roles",
+      "description": "Artifacts are Product Backlog, Sprint Backlog, Increment."
+    },
+    {
+      "id": "ExtremeProgrammingPhases",
+      "type": "major",
+      "parent": null,
+      "description": "Phases of Extreme Programming"
+    },
+    {
+      "id": "Kanban",
+      "type": "subnode",
+      "parent": "ExtremeProgrammingPhases",
+      "description": "A visual framework managing work with tasks optimized flow."
+    },
+    {
+      "id": "VisualWorkflow",
+      "type": "subnode",
+      "parent": "Kanban",
+      "description": "Use a Kanban board columns like To Do, In Progress, Done."
+    },
+    {
+      "id": "LimitWorkInProgress",
+      "type": "subnode",
+      "parent": "Kanban",
+      "description": "Set limits to prevent bottlenecks and improve flow."
+    },
+    {
+      "id": "ManageFlow",
+      "type": "subnode",
+      "parent": "Kanban",
+      "description": "Monitor and optimize task flow continuously."
+    },
+    {
+      "id": "ContinuousImprovement",
+      "type": "subnode",
+      "parent": "Kanban",
+      "description": "Use feedback and metrics to enhance the process."
+    },
+    {
+      "id": "FDD",
+      "type": "major",
+      "parent": null,
+      "description": "Focus on delivering tangible features iteratively."
+    },
+    {
+      "id": "KeyPractices_FDD",
+      "type": "subnode",
+      "parent": "FDD",
+      "description": "Plan by feature and deliver in small increments."
+    },
+    {
+      "id": "Crystal",
+      "type": "major",
+      "parent": null,
+      "description": "Agile frameworks like Crystal Clear based on team size and project needs."
+    },
+    {
+      "id": "KeyPractices_Crystal",
+      "type": "subnode",
+      "parent": "Crystal",
+      "description": "Frequent delivery with reflective improvement."
+    },
+    {
+      "id": "DSDM",
+      "type": "major",
+      "parent": null,
+      "description": "Agile framework for timely and budget projects with user involvement."
+    },
+    {
+      "id": "KeyPractices_DSDM",
+      "type": "subnode",
+      "parent": "DSDM",
+      "description": "Timeboxing and iterative development with continuous user involvement."
+    }
+  ],
+  "edges": [
+    {
+      "from": "8",
+      "to": "9",
+      "relationship": "advantage"
+    },
+    {
+      "from": "2",
+      "to": "12",
+      "relationship": "part_of"
+    },
+    {
+      "from": "Agile Model",
+      "to": "Maintenance",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "Key Artifacts",
+      "to": "Scrum Key Roles",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "12",
+      "to": "14",
+      "relationship": "part_of"
+    },
+    {
+      "from": "2",
+      "to": "4",
+      "relationship": "comes_after"
+    },
+    {
+      "from": "Three Aspects of Scrum",
+      "to": "Scrum Overview",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "Kanban",
+      "to": "LimitWorkInProgress",
+      "relationship": "sets"
+    },
+    {
+      "from": "FDD",
+      "to": "KeyPractices_FDD",
+      "relationship": "applies"
+    },
+    {
+      "from": "11",
+      "to": "12",
+      "relationship": "has_part"
+    },
+    {
+      "from": "3",
+      "to": "5",
+      "relationship": "contains"
+    },
+    {
+      "from": "2",
+      "to": "6",
+      "relationship": "part_of"
+    },
+    {
+      "from": "7",
+      "to": "9",
+      "relationship": "has_part"
+    },
+    {
+      "from": "2",
+      "to": "5",
+      "relationship": "comes_after"
+    },
+    {
+      "from": "27",
+      "to": "28",
+      "relationship": "part_of"
+    },
+    {
+      "from": "Software Deployment",
+      "to": "Maintenance",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "DSDM",
+      "to": "KeyPractices_DSDM",
+      "relationship": "uses"
+    },
+    {
+      "from": "1",
+      "to": "2",
+      "relationship": "contains"
+    },
+    {
+      "from": "4",
+      "to": "5",
+      "relationship": "contains"
+    },
+    {
+      "from": "15",
+      "to": "18",
+      "relationship": "contains"
+    },
+    {
+      "from": "7",
+      "to": "8",
+      "relationship": "contains"
+    },
+    {
+      "from": "10",
+      "to": "11",
+      "relationship": "contains"
+    },
+    {
+      "from": "9",
+      "to": "10",
+      "relationship": "part_of"
+    },
+    {
+      "from": "1",
+      "to": "6",
+      "relationship": "contains"
+    },
+    {
+      "from": "22",
+      "to": "24",
+      "relationship": "part_of"
+    },
+    {
+      "from": "1",
+      "to": "2",
+      "relationship": "increment"
+    },
+    {
+      "from": "Kanban",
+      "to": "VisualWorkflow",
+      "relationship": "uses"
+    },
+    {
+      "from": "Kanban",
+      "to": "ContinuousImprovement",
+      "relationship": "improves"
+    },
+    {
+      "from": "15",
+      "to": "17",
+      "relationship": "contains"
+    },
+    {
+      "from": "22",
+      "to": "25",
+      "relationship": "part_of"
+    },
+    {
+      "from": "DevOps",
+      "to": "Developers",
+      "relationship": "contains"
+    },
+    {
+      "from": "2",
+      "to": "3",
+      "relationship": "has_part"
+    },
+    {
+      "from": "Crystal",
+      "to": "KeyPractices_Crystal",
+      "relationship": "employs"
+    },
+    {
+      "from": "5",
+      "to": "7",
+      "relationship": "disadvantage"
+    },
+    {
+      "from": "DevOps",
+      "to": "Operators",
+      "relationship": "contains"
+    },
+    {
+      "from": "2",
+      "to": "3",
+      "relationship": "part_of"
+    },
+    {
+      "from": "20",
+      "to": "21",
+      "relationship": "part_of"
+    },
+    {
+      "from": "6",
+      "to": "7",
+      "relationship": "part_of"
+    },
+    {
+      "from": "1",
+      "to": "3",
+      "relationship": "contains"
+    },
+    {
+      "from": "How DevOps Works",
+      "to": "Integration",
+      "relationship": "contains"
+    },
+    {
+      "from": "6",
+      "to": "8",
+      "relationship": "part_of"
+    },
+    {
+      "from": "9",
+      "to": "11",
+      "relationship": "part_of"
+    },
+    {
+      "from": "15",
+      "to": "16",
+      "relationship": "contains"
+    },
+    {
+      "from": "12",
+      "to": "13",
+      "relationship": "part_of"
+    },
+    {
+      "from": "5",
+      "to": "6",
+      "relationship": "advantage"
+    },
+    {
+      "from": "How DevOps Works",
+      "to": "Teams",
+      "relationship": "contains"
+    },
+    {
+      "from": "2",
+      "to": "3",
+      "relationship": "contains"
+    },
+    {
+      "from": "8",
+      "to": "10",
+      "relationship": "disadvantage"
+    },
+    {
+      "from": "2",
+      "to": "9",
+      "relationship": "part_of"
+    },
+    {
+      "from": "Kanban",
+      "to": "ManageFlow",
+      "relationship": "monitors"
+    },
+    {
+      "from": "2",
+      "to": "3",
+      "relationship": "comes_after"
+    },
+    {
+      "from": "How DevOps Works",
+      "to": "Technology Stack",
+      "relationship": "contains"
+    },
+    {
+      "from": "22",
+      "to": "23",
+      "relationship": "part_of"
+    },
+    {
+      "from": "27",
+      "to": "29",
+      "relationship": "part_of"
+    },
+    {
+      "from": "Scrum Overview",
+      "to": "Types of Agile Frameworks",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "3",
+      "to": "4",
+      "relationship": "part_of"
+    },
+    {
+      "from": "22",
+      "to": "26",
+      "relationship": "part_of"
+    },
+    {
+      "from": "3",
+      "to": "5",
+      "relationship": "part_of"
+    },
+    {
+      "from": "15",
+      "to": "19",
+      "relationship": "contains"
+    },
+    {
+      "from": "3",
+      "to": "5",
+      "relationship": "leads_to"
+    },
+    {
+      "from": "5",
+      "to": "6",
+      "relationship": "has_part"
+    },
+    {
+      "from": "ExtremeProgrammingPhases",
+      "to": "Kanban",
+      "relationship": "contains"
+    },
+    {
+      "from": "2",
+      "to": "4",
+      "relationship": "contains"
+    }
+  ]
+}

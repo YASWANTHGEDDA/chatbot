@@ -1,6 +1,6 @@
 // server/services/geminiService.js
 const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
-require('dotenv').config(); // Removed dotenv
+// require('dotenv').config(); // Removed dotenv
 
 // Read API Key directly from environment variables
 const API_KEY = process.env.GEMINI_API_KEY;

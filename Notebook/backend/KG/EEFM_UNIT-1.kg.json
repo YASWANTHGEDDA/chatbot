@@ -1,0 +1,891 @@
+{
+  "nodes": [
+    {
+      "id": "ECON101",
+      "type": "major",
+      "parent": null,
+      "description": "Introduction to Managerial Economics"
+    },
+    {
+      "id": "ECON102",
+      "type": "subnode",
+      "parent": "ECON101",
+      "description": "History of Economics"
+    },
+    {
+      "id": "ECON103",
+      "type": "subnode",
+      "parent": "ECON101",
+      "description": "Meaning of Economics"
+    },
+    {
+      "id": "ECON104",
+      "type": "subnode",
+      "parent": "ECON101",
+      "description": "Usefulness to Engineering Students"
+    },
+    {
+      "id": "ECON105",
+      "type": "subnode",
+      "parent": "ECON101",
+      "description": "Definitions of Economics"
+    },
+    {
+      "id": "ECON106",
+      "type": "subnode",
+      "parent": "ECON104",
+      "description": "Managerial Economics"
+    },
+    {
+      "id": "ECON107",
+      "type": "subnode",
+      "parent": "ECON105",
+      "description": "Managerial Economics Further Explanation"
+    },
+    {
+      "id": "1",
+      "type": "subnode",
+      "parent": "0",
+      "description": "Introduction to Managerial Economics"
+    },
+    {
+      "id": "2",
+      "type": "subnode",
+      "parent": "1",
+      "description": "Point Method: Lower segment of demand curve | Upper segment of demand curve"
+    },
+    {
+      "id": "3",
+      "type": "subnode",
+      "parent": "2",
+      "description": "Importance of Elasticity in Business"
+    },
+    {
+      "id": "4",
+      "type": "subnode",
+      "parent": "2",
+      "description": "Methods to Measure Elasticity"
+    },
+    {
+      "id": "0",
+      "type": "major",
+      "parent": null,
+      "description": "Managerial Economics"
+    },
+    {
+      "id": "5",
+      "type": "subnode",
+      "parent": "2",
+      "description": "Zero Income Elasticity"
+    },
+    {
+      "id": "6",
+      "type": "statistical",
+      "parent": "2",
+      "description": "Abnormal consumer behavior"
+    },
+    {
+      "id": "7",
+      "type": "statistical",
+      "parent": "2",
+      "description": "Expected Changes in Price"
+    },
+    {
+      "id": "8",
+      "type": "statistical",
+      "parent": "3",
+      "description": "Advertising Elasticity of Demand"
+    },
+    {
+      "id": "9",
+      "type": "statistical",
+      "parent": "4",
+      "description": "Promotional Elasticity or Advertising Elasticity"
+    },
+    {
+      "id": "10",
+      "type": "statistical",
+      "parent": "5",
+      "description": "Other examples of consumer goods demand"
+    },
+    {
+      "id": "11",
+      "type": "subnode",
+      "parent": "6",
+      "description": "Demand for producer's goods"
+    },
+    {
+      "id": "12",
+      "type": "subnode",
+      "parent": "11",
+      "description": "Machines, tools, equipment"
+    },
+    {
+      "id": "13",
+      "type": "subnode",
+      "parent": "11",
+      "description": "Other examples of producer goods demand"
+    },
+    {
+      "id": "14",
+      "type": "subnode",
+      "parent": "0",
+      "description": "Parts of Managerial Economics"
+    },
+    {
+      "id": "15",
+      "type": "subnode",
+      "parent": "14",
+      "description": "Bread, sweet, milk"
+    },
+    {
+      "id": "16",
+      "type": "subnode",
+      "parent": "14",
+      "description": "Other perishable goods examples"
+    },
+    {
+      "id": "17",
+      "type": "subnode",
+      "parent": "7",
+      "description": "Characteristics of Managerial Economics"
+    },
+    {
+      "id": "18",
+      "type": "subnode",
+      "parent": "17",
+      "description": "TV, Refrigerators, air coolers, washing machines"
+    },
+    {
+      "id": "19",
+      "type": "subnode",
+      "parent": "18",
+      "description": "Theoretical Advantages of Managerial Economics"
+    },
+    {
+      "id": "20",
+      "type": "subnode",
+      "parent": "19",
+      "description": "Practical Advantages of Managerial Economics"
+    },
+    {
+      "id": "21",
+      "type": "subnode",
+      "parent": "20",
+      "description": "Quantities demanded by a single consumer"
+    },
+    {
+      "id": "22",
+      "type": "subnode",
+      "parent": "21",
+      "description": "Example table showing individual demand at different prices"
+    },
+    {
+      "id": "23",
+      "type": "subnode",
+      "parent": "21",
+      "description": "Explanation of individual demand concepts"
+    },
+    {
+      "id": "24",
+      "type": "subnode",
+      "parent": "21",
+      "description": "Industrial Market Research"
+    },
+    {
+      "id": "25",
+      "type": "subnode",
+      "parent": "21",
+      "description": "Quantities demanded by the entire market at different prices"
+    },
+    {
+      "id": "26",
+      "type": "subnode",
+      "parent": "21",
+      "description": "Example table showing market demand at different prices"
+    },
+    {
+      "id": "27",
+      "type": "subnode",
+      "parent": "7",
+      "description": "Basic Principles of Managerial Economics"
+    },
+    {
+      "id": "28",
+      "type": "subnode",
+      "parent": "27",
+      "description": "Quantities purchased by consumers based on their income levels"
+    },
+    {
+      "id": "Price Elasticity of Demand",
+      "type": "major",
+      "parent": null,
+      "description": "Discusses the responsiveness of quantity demanded to price changes."
+    },
+    {
+      "id": "Perfectly Inelastic Demand (E=0)",
+      "type": "subnode",
+      "parent": "Price Elasticity of Demand",
+      "description": "The demand remains constant despite price changes."
+    },
+    {
+      "id": "Unitary Elastic Demand (E=1)",
+      "type": "subnode",
+      "parent": "Price Elasticity of Demand",
+      "description": "Proportionate change in quantity demanded to price change."
+    },
+    {
+      "id": "Relatively Elastic Demand (E<1)",
+      "type": "subnode",
+      "parent": "Price Elasticity of Demand",
+      "description": "Demand changes more than proportionally with price decrease."
+    },
+    {
+      "id": "Relatively Inelastic Demand (E>1)",
+      "type": "subnode",
+      "parent": "Price Elasticity of Demand",
+      "description": "Demand changes less than proportionally with price decrease."
+    },
+    {
+      "id": "Income Elasticity of Demand",
+      "type": "major",
+      "parent": null,
+      "description": "Examines how demand changes with income fluctuations, keeping other factors constant."
+    },
+    {
+      "id": "Positive Income Elasticity",
+      "type": "subnode",
+      "parent": "Income Elasticity of Demand",
+      "description": "Demand increases as income increases."
+    },
+    {
+      "id": "Negative Income Elasticity",
+      "type": "subnode",
+      "parent": "Income Elasticity of Demand",
+      "description": "Demand decreases as income increases."
+    },
+    {
+      "id": "Zero Income Elasticity",
+      "type": "subnode",
+      "parent": "Income Elasticity of Demand",
+      "description": "Demand remains unchanged with income changes."
+    },
+    {
+      "id": "29",
+      "type": "subnode",
+      "parent": "27",
+      "description": "Explanation of how income affects demand"
+    },
+    {
+      "id": "Elasticity of Demand",
+      "type": "major",
+      "parent": null,
+      "description": "Measures responsiveness to price change"
+    },
+    {
+      "id": "Types of Elasticity",
+      "type": "subnode",
+      "parent": "Elasticity of Demand",
+      "description": "Includes price, income, cross, and advertising elasticity."
+    },
+    {
+      "id": "Price Elasticity",
+      "type": "subnode",
+      "parent": "Types of Elasticity",
+      "description": "Measures responsiveness to price changes."
+    },
+    {
+      "id": "Categories of Price Elasticity",
+      "type": "subnode",
+      "parent": "Price Elasticity",
+      "description": "Includes perfectly elastic, inelastic, unit, relatively elastic, and relatively inelastic."
+    },
+    {
+      "id": "Perfectly Elastic Demand",
+      "type": "subnode",
+      "parent": "Categories of Price Elasticity",
+      "description": "Extreme case where quantity demanded changes infinitely with price."
+    },
+    {
+      "id": "Perfectly Inelastic Demand",
+      "type": "subnode",
+      "parent": "Categories of Price Elasticity",
+      "description": "Quantity demanded does not change with price."
+    },
+    {
+      "id": "Unit Elasticity",
+      "type": "subnode",
+      "parent": "Categories of Price Elasticity",
+      "description": "Percentage change in quantity equals percentage change in price."
+    },
+    {
+      "id": "Relatively Elastic Demand",
+      "type": "subnode",
+      "parent": "Categories of Price Elasticity",
+      "description": "More responsive than unit elasticity."
+    },
+    {
+      "id": "Relatively Inelastic Demand",
+      "type": "subnode",
+      "parent": "Categories of Price Elasticity",
+      "description": "Less responsive than unit elasticity."
+    }
+  ],
+  "edges": [
+    {
+      "from": "7",
+      "to": "20",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "ECON105",
+      "to": "ECON107",
+      "relationship": "dependent"
+    },
+    {
+      "from": "28",
+      "to": "27",
+      "relationship": "part_of"
+    },
+    {
+      "from": "7",
+      "to": "8",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "3",
+      "to": "6",
+      "relationship": "contains"
+    },
+    {
+      "from": "2",
+      "to": "6",
+      "relationship": "contains"
+    },
+    {
+      "from": "Price Elasticity of Demand",
+      "to": "Relatively Inelastic Demand (E>1)",
+      "relationship": "has_type"
+    },
+    {
+      "from": "17",
+      "to": "0",
+      "relationship": "part_of"
+    },
+    {
+      "from": "7",
+      "to": "14",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "4",
+      "to": "10",
+      "relationship": "related_to"
+    },
+    {
+      "from": "14",
+      "to": "16",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "Elasticity of Demand",
+      "to": "Types of Elasticity",
+      "relationship": "contains"
+    },
+    {
+      "from": "3",
+      "to": "7",
+      "relationship": "example_of"
+    },
+    {
+      "from": "5",
+      "to": "10",
+      "relationship": "contains"
+    },
+    {
+      "from": "11",
+      "to": "13",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "Income Elasticity of Demand",
+      "to": "Positive Income Elasticity",
+      "relationship": "has_type"
+    },
+    {
+      "from": "22",
+      "to": "23",
+      "relationship": "part_of"
+    },
+    {
+      "from": "1",
+      "to": "5",
+      "relationship": "contains"
+    },
+    {
+      "from": "2",
+      "to": "6",
+      "relationship": "related_to"
+    },
+    {
+      "from": "7",
+      "to": "12",
+      "relationship": "contains"
+    },
+    {
+      "from": "8",
+      "to": "19",
+      "relationship": "contains"
+    },
+    {
+      "from": "24",
+      "to": "25",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "ECON102",
+      "to": "ECON103",
+      "relationship": "dependent"
+    },
+    {
+      "from": "4",
+      "to": "9",
+      "relationship": "contains"
+    },
+    {
+      "from": "17",
+      "to": "18",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "1",
+      "to": "4",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "21",
+      "to": "22",
+      "relationship": "part_of"
+    },
+    {
+      "from": "3",
+      "to": "5",
+      "relationship": "example_of"
+    },
+    {
+      "from": "20",
+      "to": "23",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "Price Elasticity of Demand",
+      "to": "Unitary Elastic Demand (E=1)",
+      "relationship": "has_type"
+    },
+    {
+      "from": "5",
+      "to": "10",
+      "relationship": "related_to"
+    },
+    {
+      "from": "Price Elasticity of Demand",
+      "to": "Perfectly Inelastic Demand (E=0)",
+      "relationship": "has_type"
+    },
+    {
+      "from": "24",
+      "to": "26",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "2",
+      "to": "4",
+      "relationship": "restates"
+    },
+    {
+      "from": "20",
+      "to": "22",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "1",
+      "to": "2",
+      "relationship": "contains"
+    },
+    {
+      "from": "Categories of Price Elasticity",
+      "to": "Perfectly Elastic Demand",
+      "relationship": "contains"
+    },
+    {
+      "from": "Categories of Price Elasticity",
+      "to": "Relatively Elastic Demand",
+      "relationship": "contains"
+    },
+    {
+      "from": "1",
+      "to": "2",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "Types of Elasticity",
+      "to": "Price Elasticity",
+      "relationship": "contains"
+    },
+    {
+      "from": "15",
+      "to": "14",
+      "relationship": "part_of"
+    },
+    {
+      "from": "9",
+      "to": "10",
+      "relationship": "contains"
+    },
+    {
+      "from": "11",
+      "to": "12",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "7",
+      "to": "24",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "27",
+      "to": "21",
+      "relationship": "part_of"
+    },
+    {
+      "from": "Categories of Price Elasticity",
+      "to": "Unit Elasticity",
+      "relationship": "contains"
+    },
+    {
+      "from": "6",
+      "to": "7",
+      "relationship": "contains"
+    },
+    {
+      "from": "2",
+      "to": "7",
+      "relationship": "contains"
+    },
+    {
+      "from": "1",
+      "to": "7",
+      "relationship": "contains"
+    },
+    {
+      "from": "2",
+      "to": "10",
+      "relationship": "contains"
+    },
+    {
+      "from": "0",
+      "to": "16",
+      "relationship": "contains"
+    },
+    {
+      "from": "Price Elasticity of Demand",
+      "to": "Relatively Elastic Demand (E<1)",
+      "relationship": "has_type"
+    },
+    {
+      "from": "Income Elasticity of Demand",
+      "to": "Zero Income Elasticity",
+      "relationship": "has_type"
+    },
+    {
+      "from": "Categories of Price Elasticity",
+      "to": "Perfectly Inelastic Demand",
+      "relationship": "contains"
+    },
+    {
+      "from": "5",
+      "to": "9",
+      "relationship": "related_to"
+    },
+    {
+      "from": "3",
+      "to": "5",
+      "relationship": "contains"
+    },
+    {
+      "from": "0",
+      "to": "27",
+      "relationship": "contains"
+    },
+    {
+      "from": "6",
+      "to": "11",
+      "relationship": "contains"
+    },
+    {
+      "from": "3",
+      "to": "7",
+      "relationship": "related_to"
+    },
+    {
+      "from": "2",
+      "to": "5",
+      "relationship": "contains"
+    },
+    {
+      "from": "7",
+      "to": "17",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "2",
+      "to": "10",
+      "relationship": "related_to"
+    },
+    {
+      "from": "4",
+      "to": "7",
+      "relationship": "uses"
+    },
+    {
+      "from": "ECON104",
+      "to": "ECON106",
+      "relationship": "dependent"
+    },
+    {
+      "from": "16",
+      "to": "14",
+      "relationship": "part_of"
+    },
+    {
+      "from": "3",
+      "to": "10",
+      "relationship": "related_to"
+    },
+    {
+      "from": "1",
+      "to": "2",
+      "relationship": "depends_on"
+    },
+    {
+      "from": "4",
+      "to": "8",
+      "relationship": "related_to"
+    },
+    {
+      "from": "18",
+      "to": "0",
+      "relationship": "part_of"
+    },
+    {
+      "from": "1",
+      "to": "3",
+      "relationship": "contains"
+    },
+    {
+      "from": "1",
+      "to": "3",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "4",
+      "to": "6",
+      "relationship": "contains"
+    },
+    {
+      "from": "24",
+      "to": "25",
+      "relationship": "part_of"
+    },
+    {
+      "from": "8",
+      "to": "9",
+      "relationship": "contains"
+    },
+    {
+      "from": "4",
+      "to": "6",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "3",
+      "to": "8",
+      "relationship": "example_of"
+    },
+    {
+      "from": "7",
+      "to": "11",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "20",
+      "to": "18",
+      "relationship": "part_of"
+    },
+    {
+      "from": "Price Elasticity",
+      "to": "Categories of Price Elasticity",
+      "relationship": "contains"
+    },
+    {
+      "from": "8",
+      "to": "10",
+      "relationship": "contains"
+    },
+    {
+      "from": "25",
+      "to": "26",
+      "relationship": "part_of"
+    },
+    {
+      "from": "8",
+      "to": "10",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "ECON103",
+      "to": "ECON104",
+      "relationship": "dependent"
+    },
+    {
+      "from": "14",
+      "to": "15",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "27",
+      "to": "29",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "Income Elasticity of Demand",
+      "to": "Negative Income Elasticity",
+      "relationship": "has_type"
+    },
+    {
+      "from": "23",
+      "to": "24",
+      "relationship": "part_of"
+    },
+    {
+      "from": "1",
+      "to": "5",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "19",
+      "to": "18",
+      "relationship": "part_of"
+    },
+    {
+      "from": "1",
+      "to": "6",
+      "relationship": "contains"
+    },
+    {
+      "from": "4",
+      "to": "5",
+      "relationship": "contains"
+    },
+    {
+      "from": "0",
+      "to": "15",
+      "relationship": "contains"
+    },
+    {
+      "from": "4",
+      "to": "5",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "3",
+      "to": "6",
+      "relationship": "example_of"
+    },
+    {
+      "from": "Categories of Price Elasticity",
+      "to": "Relatively Inelastic Demand",
+      "relationship": "contains"
+    },
+    {
+      "from": "27",
+      "to": "28",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "1",
+      "to": "2",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "2",
+      "to": "3",
+      "relationship": "contains"
+    },
+    {
+      "from": "3",
+      "to": "8",
+      "relationship": "contains"
+    },
+    {
+      "from": "20",
+      "to": "21",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "1",
+      "to": "4",
+      "relationship": "contains"
+    },
+    {
+      "from": "1",
+      "to": "3",
+      "relationship": "depends_on"
+    },
+    {
+      "from": "1",
+      "to": "3",
+      "relationship": "subtopic"
+    },
+    {
+      "from": "7",
+      "to": "27",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "17",
+      "to": "19",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "8",
+      "to": "9",
+      "relationship": "parent|child"
+    },
+    {
+      "from": "2",
+      "to": "9",
+      "relationship": "contains"
+    },
+    {
+      "from": "4",
+      "to": "7",
+      "relationship": "contains"
+    },
+    {
+      "from": "3",
+      "to": "4",
+      "relationship": "contains"
+    },
+    {
+      "from": "9",
+      "to": "20",
+      "relationship": "contains"
+    },
+    {
+      "from": "2",
+      "to": "4",
+      "relationship": "contains"
+    }
+  ]
+}

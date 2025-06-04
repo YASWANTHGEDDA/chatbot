@@ -2,7 +2,7 @@ import sys
 from langchain_ollama import OllamaEmbeddings, ChatOllama
 
 # Configuration (adjust these if your setup differs)
-OLLAMA_BASE_URL = "http://172.180.9.187:11434/"
+OLLAMA_BASE_URL = "http://172.180.9.187:11435/" 
 EMBEDDINGS_MODEL = "mxbai-embed-large"
 LLM_MODEL = "deepseek-r1"
 

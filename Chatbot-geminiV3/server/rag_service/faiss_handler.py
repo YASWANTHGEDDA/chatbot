@@ -3,7 +3,7 @@
 import os
 import faiss
 from langchain_community.vectorstores import FAISS
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_core.embeddings import Embeddings as LangchainEmbeddings
 from langchain_core.documents import Document as LangchainDocument
 from langchain_community.docstore import InMemoryDocstore

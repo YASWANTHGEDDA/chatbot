@@ -1,0 +1,158 @@
+{
+  "nodes": [
+    {
+      "id": "1",
+      "type": "major",
+      "parent": null,
+      "description": "Report Generation"
+    },
+    {
+      "id": "2",
+      "type": "major",
+      "parent": "1",
+      "description": "Introduction to DevOps"
+    },
+    {
+      "id": "3",
+      "type": "subnode",
+      "parent": "1",
+      "description": "Data Analysis Queries"
+    },
+    {
+      "id": "4",
+      "type": "major",
+      "parent": null,
+      "description": "Cloud Infrastructure"
+    },
+    {
+      "id": "5",
+      "type": "subnode",
+      "parent": "4",
+      "description": "Serverless Computing"
+    },
+    {
+      "id": "7",
+      "type": "major",
+      "parent": null,
+      "description": "Automation Tools"
+    },
+    {
+      "id": "8",
+      "type": "subnode",
+      "parent": "7",
+      "description": "Shell Commands"
+    },
+    {
+      "id": "9",
+      "type": "subnode",
+      "parent": "8",
+      "description": "Common Commands in Linux"
+    },
+    {
+      "id": "10",
+      "type": "major",
+      "parent": null,
+      "description": "Version Control Systems"
+    },
+    {
+      "id": "13",
+      "type": "major",
+      "parent": null,
+      "description": "Backup and Recovery"
+    },
+    {
+      "id": "14",
+      "type": "subnode",
+      "parent": "13",
+      "description": "Data Backup Strategies"
+    },
+    {
+      "id": "16",
+      "type": "major",
+      "parent": null,
+      "description": " incident management"
+    },
+    {
+      "id": "17",
+      "type": "subnode",
+      "parent": "16",
+      "description": "Incident Monitoring Tools"
+    },
+    {
+      "id": "19",
+      "type": "major",
+      "parent": null,
+      "description": " incident management"
+    },
+    {
+      "id": "22",
+      "type": "major",
+      "parent": null,
+      "description": " incident management"
+    },
+    {
+      "id": "25",
+      "type": "major",
+      "parent": null,
+      "description": " incident management"
+    },
+    {
+      "id": "28",
+      "type": "major",
+      "parent": null,
+      "description": " incident management"
+    }
+  ],
+  "edges": [
+    {
+      "from": "16",
+      "to": "17",
+      "relationship": "contains"
+    },
+    {
+      "from": "13",
+      "to": "14",
+      "relationship": "contains"
+    },
+    {
+      "from": "1",
+      "to": "2",
+      "relationship": "contains"
+    },
+    {
+      "from": "3",
+      "to": "4",
+      "relationship": "part_of"
+    },
+    {
+      "from": "2",
+      "to": "3",
+      "relationship": "contains"
+    },
+    {
+      "from": "7",
+      "to": "8",
+      "relationship": "contains"
+    },
+    {
+      "from": "4",
+      "to": "5",
+      "relationship": "contains"
+    },
+    {
+      "from": "1",
+      "to": "2",
+      "relationship": "depends_on"
+    },
+    {
+      "from": "8",
+      "to": "9",
+      "relationship": "contains"
+    },
+    {
+      "from": "2",
+      "to": "3",
+      "relationship": "part_of"
+    }
+  ]
+}

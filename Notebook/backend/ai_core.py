@@ -1,697 +1,400 @@
 # --- START OF FILE ai_core.py ---
 
-# Notebook/backend/ai_core.py
 import os
 import logging
-import fitz  # PyMuPDF
-import re
-# Near the top of ai_core.py
+import json
+import ollama
+import concurrent.futures
+from tqdm import tqdm
+from pypdf import PdfReader
+from pptx import Presentation
 from langchain_community.vectorstores import FAISS
 from langchain_ollama import OllamaEmbeddings, ChatOllama
-# Removed incorrect OllamaLLM import if it was there from previous attempts
-from langchain.text_splitter import RecursiveCharacterTextSplitter # <<<--- ENSURE THIS IS PRESENT
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.docstore.document import Document
 from langchain.chains import LLMChain
-from langchain.prompts import PromptTemplate # Import PromptTemplate if needed directly here
+# PromptTemplate is already imported in config, but good practice if used directly here too
+# from langchain.prompts import PromptTemplate
+
 from config import (
     OLLAMA_BASE_URL, OLLAMA_MODEL, OLLAMA_EMBED_MODEL, FAISS_FOLDER,
     DEFAULT_PDFS_FOLDER, UPLOAD_FOLDER, RAG_CHUNK_K, MULTI_QUERY_COUNT,
     ANALYSIS_MAX_CONTEXT_LENGTH, OLLAMA_REQUEST_TIMEOUT, RAG_SEARCH_K_PER_QUERY,
-    SUB_QUERY_PROMPT_TEMPLATE, SYNTHESIS_PROMPT_TEMPLATE, ANALYSIS_PROMPTS
+    SUB_QUERY_PROMPT_TEMPLATE, SYNTHESIS_PROMPT_TEMPLATE, ANALYSIS_PROMPTS,
+    KG_CHUNK_SIZE, KG_CHUNK_OVERLAP, KG_MAX_WORKERS, KG_MODEL,
+    KG_OUTPUT_FOLDER, KG_PROMPT_TEMPLATE, KG_FILENAME_SUFFIX # Added KG_FILENAME_SUFFIX
 )
-from utils import parse_llm_response, escape_html # Added escape_html for potential use
+from utils import parse_llm_response, escape_html # Assuming you have these
 
 logger = logging.getLogger(__name__)
 
-# --- Global State (managed within functions) ---
+# Global State
 document_texts_cache = {}
 vector_store = None
-embeddings: OllamaEmbeddings | None = None
-llm: ChatOllama | None = None
+embeddings = None
+llm = None
+_kg_ollama_client = None
 
-# --- Initialization Functions ---
-
-# ai_core.py (only showing the modified function)
-def initialize_ai_components() -> tuple[OllamaEmbeddings | None, ChatOllama | None]:
-    """Initializes Ollama Embeddings and LLM instances globally.
-
-    Returns:
-        tuple[OllamaEmbeddings | None, ChatOllama | None]: The initialized embeddings and llm objects,
-                                                          or (None, None) if initialization fails.
-    """
+# Initialization Functions
+def initialize_ai_components():
+    """Initializes embeddings and LLM."""
     global embeddings, llm
-    if embeddings and llm:
-        logger.info("AI components already initialized.")
-        return embeddings, llm
-
+    logger.info("Initializing AI components...")
     try:
-        # Use the new OllamaEmbeddings from langchain_ollama
-        logger.info(f"Initializing Ollama Embeddings: model={OLLAMA_EMBED_MODEL}, base_url={OLLAMA_BASE_URL}, timeout={OLLAMA_REQUEST_TIMEOUT}s")
         embeddings = OllamaEmbeddings(
+            base_url=OLLAMA_BASE_URL,
             model=OLLAMA_EMBED_MODEL,
-            base_url=OLLAMA_BASE_URL,
-            #request_timeout=OLLAMA_REQUEST_TIMEOUT # Explicitly pass timeout
         )
-        # Perform a quick test embedding
-        _ = embeddings.embed_query("Test embedding query")
-        logger.info("Ollama Embeddings initialized successfully.")
-
-        # Use the new ChatOllama from langchain_ollama
-        logger.info(f"Initializing Ollama LLM: model={OLLAMA_MODEL}, base_url={OLLAMA_BASE_URL}, timeout={OLLAMA_REQUEST_TIMEOUT}s")
         llm = ChatOllama(
-            model=OLLAMA_MODEL,
             base_url=OLLAMA_BASE_URL,
-            #request_timeout=OLLAMA_REQUEST_TIMEOUT # Explicitly pass timeout
+            model=OLLAMA_MODEL,
+            request_timeout=OLLAMA_REQUEST_TIMEOUT
         )
-        # Perform a quick test invocation
-        _ = llm.invoke("Respond briefly with 'AI Check OK'")
-        logger.info("Ollama LLM initialized successfully.")
-
-        return embeddings, llm  # Return the objects
-    except ImportError as e:
-        logger.critical(f"Import error during AI initialization: {e}. Ensure correct langchain packages are installed.", exc_info=True)
-        embeddings = None
-        llm = None
-        return None, None
+        logger.info("AI components initialized.")
+        return embeddings, llm
     except Exception as e:
-        # Catch potential Pydantic validation error specifically if possible, or general Exception
-        logger.error(f"Failed to initialize AI components (check Ollama server status, model name '{OLLAMA_MODEL}' / '{OLLAMA_EMBED_MODEL}', base URL '{OLLAMA_BASE_URL}', timeout {OLLAMA_REQUEST_TIMEOUT}s): {e}", exc_info=True)
-        # Log the type of error for better debugging
-        logger.error(f"Error Type: {type(e).__name__}")
-        # If it's a Pydantic error, the message usually contains details
-        if "pydantic" in str(type(e)).lower():
-             logger.error(f"Pydantic Validation Error Details: {e}")
-        embeddings = None
-        llm = None
+        logger.error(f"Failed to initialize AI components: {e}", exc_info=True)
         return None, None
 
-def load_vector_store() -> bool:
-    """Loads the FAISS index from disk into the global `vector_store`.
-
-    Requires `embeddings` to be initialized first.
-
-    Returns:
-        bool: True if the index was loaded successfully, False otherwise (or if not found).
-    """
-    global vector_store, embeddings
-    if vector_store:
-        logger.info("Vector store already loaded.")
-        return True
-    if not embeddings:
-        logger.error("Embeddings not initialized. Cannot load vector store.")
-        return False
-
-    faiss_index_path = os.path.join(FAISS_FOLDER, "index.faiss")
-    faiss_pkl_path = os.path.join(FAISS_FOLDER, "index.pkl")
-
-    if os.path.exists(faiss_index_path) and os.path.exists(faiss_pkl_path):
-        try:
-            logger.info(f"Loading FAISS index from folder: {FAISS_FOLDER}")
-            # Note: Loading requires the same embedding model used for saving.
-            # allow_dangerous_deserialization is required for FAISS/pickle
-            vector_store = FAISS.load_local(
-                folder_path=FAISS_FOLDER,
-                embeddings=embeddings, # Pass the initialized embeddings object
-                allow_dangerous_deserialization=True
-            )
-            index_size = getattr(getattr(vector_store, 'index', None), 'ntotal', 0)
-            if index_size > 0:
-                logger.info(f"FAISS index loaded successfully. Contains {index_size} vectors.")
-                return True
-            else:
-                logger.warning(f"FAISS index loaded from {FAISS_FOLDER}, but it appears to be empty.")
-                return True # Treat empty as loaded
-        except FileNotFoundError:
-            logger.warning(f"FAISS index files not found in {FAISS_FOLDER}, although directory exists. Proceeding without loaded index.")
-            vector_store = None
-            return False
-        except EOFError:
-            logger.error(f"EOFError loading FAISS index from {FAISS_FOLDER}. Index file might be corrupted or incomplete.", exc_info=True)
-            vector_store = None
-            return False
-        except Exception as e:
-            logger.error(f"Error loading FAISS index from {FAISS_FOLDER}: {e}", exc_info=True)
-            vector_store = None # Ensure it's None if loading failed
-            return False
-    else:
-        logger.warning(f"FAISS index files (index.faiss, index.pkl) not found at {FAISS_FOLDER}. Will be created on first upload or if default.py ran.")
-        vector_store = None
-        return False # Indicate index wasn't loaded
-
-
-def save_vector_store() -> bool:
-    """Saves the current global `vector_store` (FAISS index) to disk.
-
-    Returns:
-        bool: True if saving was successful, False otherwise (or if store is None).
-    """
+def load_vector_store():
+    """Loads or initializes FAISS vector store."""
     global vector_store
-    if not vector_store:
-        logger.warning("Attempted to save vector store, but it's not loaded or initialized.")
-        return False
-    if not os.path.exists(FAISS_FOLDER):
-        try:
-            os.makedirs(FAISS_FOLDER)
-            logger.info(f"Created FAISS store directory: {FAISS_FOLDER}")
-        except OSError as e:
-            logger.error(f"Failed to create FAISS store directory {FAISS_FOLDER}: {e}", exc_info=True)
-            return False
-
     try:
-        index_size = getattr(getattr(vector_store, 'index', None), 'ntotal', 0)
-        logger.info(f"Saving FAISS index ({index_size} vectors) to {FAISS_FOLDER}...")
-        vector_store.save_local(FAISS_FOLDER)
-        logger.info(f"FAISS index saved successfully.")
+        if os.path.exists(FAISS_FOLDER) and os.listdir(FAISS_FOLDER): # Check if directory is not empty
+            vector_store = FAISS.load_local(FAISS_FOLDER, embeddings, allow_dangerous_deserialization=True)
+            logger.info(f"Loaded existing FAISS vector store from {FAISS_FOLDER}.")
+        else:
+            logger.info(f"No FAISS index found at {FAISS_FOLDER} or it's empty. Starting with empty index.")
+            # Optionally initialize an empty store if needed immediately,
+            # or let it be created on first add_documents_to_vector_store
         return True
     except Exception as e:
-        logger.error(f"Error saving FAISS index to {FAISS_FOLDER}: {e}", exc_info=True)
+        logger.error(f"Failed to load FAISS vector store: {e}", exc_info=True)
         return False
 
+def save_vector_store():
+    """Saves FAISS vector store."""
+    try:
+        if vector_store:
+            vector_store.save_local(FAISS_FOLDER)
+            logger.info(f"Saved FAISS vector store to {FAISS_FOLDER}.")
+    except Exception as e:
+        logger.error(f"Failed to save FAISS vector store: {e}", exc_info=True)
 
 def load_all_document_texts():
-    """Loads text from all PDFs found in default and upload folders into the global cache.
-
-    Used by the analysis endpoint to avoid re-extraction.
-    """
-    global document_texts_cache
-    logger.info("Loading/refreshing document texts cache for analysis...")
-    document_texts_cache = {} # Reset cache before loading
+    """Loads text from all documents into cache."""
+    import config # Explicit import
+    logger.info("Loading all document texts into cache...")
     loaded_count = 0
-    processed_files = set()
-
-    def _load_from_folder(folder_path):
-        nonlocal loaded_count
-        count = 0
+    for folder_path in [config.DEFAULT_PDFS_FOLDER, config.UPLOAD_FOLDER]:
         if not os.path.exists(folder_path):
-            logger.warning(f"Document text folder not found: {folder_path}. Skipping.")
-            return count
-        try:
-            for filename in os.listdir(folder_path):
-                if filename.lower().endswith('.pdf') and not filename.startswith('~') and filename not in processed_files:
-                    file_path = os.path.join(folder_path, filename)
-                    # logger.debug(f"Extracting text from {filename} for cache...")
-                    text = extract_text_from_pdf(file_path)
+            logger.warning(f"Document folder not found: {folder_path}")
+            continue
+        for filename in os.listdir(folder_path):
+            if filename.lower().endswith(tuple(config.ALLOWED_EXTENSIONS)) and not filename.startswith('~'):
+                filepath = os.path.join(folder_path, filename)
+                if filename not in document_texts_cache: # Avoid reloading if already cached
+                    text = extract_text_from_file(filepath) # Renamed for clarity
                     if text:
                         document_texts_cache[filename] = text
-                        processed_files.add(filename)
-                        count += 1
-                    else:
-                        logger.warning(f"Could not extract text from {filename} in {folder_path} for cache.")
-            logger.info(f"Cached text for {count} PDFs from {folder_path}.")
-            loaded_count += count
-        except Exception as e:
-            logger.error(f"Error listing or processing files in {folder_path} for cache: {e}", exc_info=True)
-        return count
-
-    # Load defaults first, then uploads (uploads overwrite defaults if names collide in cache)
-    _load_from_folder(DEFAULT_PDFS_FOLDER)
-    _load_from_folder(UPLOAD_FOLDER)
-
-    logger.info(f"Finished loading texts cache. Total unique documents cached: {len(document_texts_cache)}")
+                        loaded_count +=1
+    logger.info(f"Loaded texts for {loaded_count} new documents into cache. Total cached: {len(document_texts_cache)}")
 
 
-# --- PDF Processing Functions ---
-
-def extract_text_from_pdf(pdf_path: str) -> str | None:
-    """Extracts text from a single PDF file using PyMuPDF (fitz).
-
-    Args:
-        pdf_path (str): The full path to the PDF file.
-
-    Returns:
-        str | None: The extracted text content, or None if an error occurred.
-    """
-    text = ""
-    if not os.path.exists(pdf_path):
-        logger.error(f"PDF file not found for extraction: {pdf_path}")
-        return None
+# Text Extraction and Chunking
+def extract_text_from_file(filepath: str) -> str: # Renamed from extract_text_from_pdf
+    """Extracts text from PDF or PPT file."""
     try:
-        doc = fitz.open(pdf_path)
-        num_pages = len(doc)
-        logger.debug(f"Starting text extraction from {os.path.basename(pdf_path)} ({num_pages} pages)...")
-        for page_num in range(num_pages):
-            try:
-                page = doc.load_page(page_num)
-                # Use "text" with sort=True for reading order. flags=0 is default.
-                page_text = page.get_text("text", sort=True, flags=0).strip()
-
-                # Basic cleaning: Replace multiple whitespace chars with single space, keep single newlines.
-                page_text = re.sub(r'[ \t\f\v]+', ' ', page_text) # Replace horizontal whitespace with single space
-                page_text = re.sub(r'\n+', '\n', page_text) # Keep single newlines, collapse multiples
-
+        ext = os.path.splitext(filepath)[1].lower()
+        if ext == '.pdf':
+            reader = PdfReader(filepath)
+            if not reader.pages:
+                logger.error(f"PDF file {filepath} has no pages or could not be read.")
+                return ""
+            text = ""
+            for i, page in enumerate(reader.pages):
+                page_text = page.extract_text()
                 if page_text:
-                    text += page_text + "\n\n" # Add double newline as separator between pages
-            except Exception as page_err:
-                logger.warning(f"Error processing page {page_num+1} of {os.path.basename(pdf_path)}: {page_err}")
-                continue # Skip problematic page
-
-        doc.close()
-        cleaned_text = text.strip()
-        if cleaned_text:
-            logger.info(f"Successfully extracted text from {os.path.basename(pdf_path)} (approx {len(cleaned_text)} chars).")
-            return cleaned_text
+                    text += page_text + "\n"
+                else:
+                    logger.warning(f"No text extracted from page {i+1} of {filepath}.")
+            return text.strip() or ""
+        elif ext in ('.pptx', '.ppt'):
+            prs = Presentation(filepath)
+            text = ""
+            for slide in prs.slides:
+                for shape in slide.shapes:
+                    if hasattr(shape, "text"):
+                        text += shape.text + "\n"
+            return text.strip() or ""
         else:
-            logger.warning(f"Extracted text was empty for {os.path.basename(pdf_path)}.")
-            return None
-    except fitz.fitz.PasswordError:
-        logger.error(f"Error extracting text from PDF {os.path.basename(pdf_path)}: File is password-protected.")
-        return None
+            logger.warning(f"Unsupported file extension for text extraction: {ext} in {filepath}")
+            return ""
+    except FileNotFoundError:
+        logger.error(f"File not found for text extraction: {filepath}")
+        return ""
     except Exception as e:
-        logger.error(f"Error extracting text from PDF {os.path.basename(pdf_path)}: {e}", exc_info=True)
-        return None
+        logger.error(f"Error extracting text from '{filepath}': {e}", exc_info=True)
+        return ""
 
 def create_chunks_from_text(text: str, filename: str) -> list[Document]:
-    """Splits text into chunks using RecursiveCharacterTextSplitter and creates LangChain Documents.
-
-    Args:
-        text (str): The text content to chunk.
-        filename (str): The source filename for metadata.
-
-    Returns:
-        list[Document]: A list of LangChain Document objects representing the chunks.
-    """
-    if not text:
-        logger.warning(f"Cannot create chunks for '{filename}', input text is empty.")
-        return []
-
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,      # Target size of each chunk
-        chunk_overlap=150,    # Overlap between chunks
-        length_function=len,
-        add_start_index=True, # Include start index in metadata
-        separators=["\n\n", "\n", ". ", ", ", " ", ""], # Hierarchical separators
-    )
-
+    """Creates document chunks from text."""
     try:
-        # Use create_documents which handles metadata assignment more cleanly
-        documents = text_splitter.create_documents([text], metadatas=[{"source": filename}])
-        # Add explicit chunk_index for clarity (though start_index is also present)
-        for i, doc in enumerate(documents):
-            doc.metadata["chunk_index"] = i
-
-        logger.info(f"Created {len(documents)} LangChain Document chunks for '{filename}'.")
-        return documents
-
+        # TODO: Consider making chunk_size and chunk_overlap configurable from config.py for RAG
+        splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+        chunks = splitter.split_text(text)
+        return [Document(page_content=chunk, metadata={"source": filename}) for chunk in chunks]
     except Exception as e:
         logger.error(f"Error creating chunks for '{filename}': {e}", exc_info=True)
         return []
 
 def add_documents_to_vector_store(documents: list[Document]) -> bool:
-    """Adds LangChain Documents to the global FAISS index.
-    Creates the index if it doesn't exist. Saves the index afterwards.
-
-    Args:
-        documents (list[Document]): The list of documents to add.
-
-    Returns:
-        bool: True if documents were added and the index saved successfully, False otherwise.
-    """
-    global vector_store, embeddings
-    if not documents:
-        logger.warning("No documents provided to add to vector store.")
-        return True # Nothing to add, technically successful no-op.
+    """Adds documents to FAISS vector store."""
+    global vector_store
     if not embeddings:
-        logger.error("Embeddings not initialized. Cannot add documents to vector store.")
+        logger.error("Cannot add documents to vector store: Embeddings not initialized.")
         return False
-
     try:
-        if vector_store:
-            logger.info(f"Adding {len(documents)} document chunks to existing FAISS index...")
-            vector_store.add_documents(documents)
-            index_size = getattr(getattr(vector_store, 'index', None), 'ntotal', 0)
-            logger.info(f"Addition complete. Index now contains {index_size} vectors.")
-        else:
-            logger.info(f"No FAISS index loaded. Creating new index from {len(documents)} document chunks...")
+        if not vector_store:
+            logger.info("Creating new FAISS vector store.")
             vector_store = FAISS.from_documents(documents, embeddings)
-            index_size = getattr(getattr(vector_store, 'index', None), 'ntotal', 0)
-            if vector_store and index_size > 0:
-                logger.info(f"New FAISS index created with {index_size} vectors.")
-            else:
-                logger.error("Failed to create new FAISS index or index is empty after creation.")
-                vector_store = None # Ensure it's None if creation failed
-                return False
-
-        # IMPORTANT: Persist the updated index
-        return save_vector_store()
-
+        else:
+            vector_store.add_documents(documents)
+        save_vector_store()
+        return True
     except Exception as e:
-        logger.error(f"Error adding documents to FAISS index or saving: {e}", exc_info=True)
-        # Consider state: if vector_store existed before, it might be partially updated in memory.
-        # Saving failed, so on next load, it should revert unless error was in 'from_documents'.
+        logger.error(f"Error adding documents to vector store: {e}", exc_info=True)
         return False
 
-# --- RAG and LLM Interaction ---
-
-# --- MODIFIED: Added logging ---
+# RAG and Analysis
 def generate_sub_queries(query: str) -> list[str]:
-    """
-    Uses the LLM to generate sub-queries for RAG. Includes the original query.
-    Uses SUB_QUERY_PROMPT_TEMPLATE from config.
-    """
-    global llm
+    """Generates sub-queries for RAG."""
     if not llm:
-        logger.error("LLM not initialized, cannot generate sub-queries. Using original query only.")
-        return [query]
-    if MULTI_QUERY_COUNT <= 0:
-        logger.debug("MULTI_QUERY_COUNT is <= 0, skipping sub-query generation.")
-        return [query]
-
-    # Use the prompt template from config
-    chain = LLMChain(llm=llm, prompt=SUB_QUERY_PROMPT_TEMPLATE)
-
+        logger.error("LLM not initialized, cannot generate sub-queries.")
+        return []
     try:
-        logger.info(f"Generating {MULTI_QUERY_COUNT} sub-queries for: '{query[:100]}...'")
-        # Log the prompt before sending (approx first 150 chars)
-        prompt_to_log = SUB_QUERY_PROMPT_TEMPLATE.format(query=query, num_queries=MULTI_QUERY_COUNT)
-        logger.debug(f"Sub-query Prompt (Start):\n{prompt_to_log[:150]}...") # DEBUG level might be better
-
-        response = chain.invoke({"query": query, "num_queries": MULTI_QUERY_COUNT})
-        # Response structure might vary; often {'text': 'query1\nquery2'}
-        raw_response_text = response.get('text', '') if isinstance(response, dict) else str(response)
-
-        # Log the raw response start
-        logger.debug(f"Sub-query Raw Response (Start):\n{raw_response_text[:150]}...") # DEBUG level
-
-        # No need to parse for <thinking> here as the prompt doesn't request it
-        sub_queries = [q.strip() for q in raw_response_text.strip().split('\n') if q.strip()]
-
-        if sub_queries:
-            logger.info(f"Generated {len(sub_queries)} sub-queries.")
-            # Ensure we don't exceed MULTI_QUERY_COUNT, and always include the original
-            final_queries = [query] + sub_queries[:MULTI_QUERY_COUNT]
-            # Deduplicate the final list just in case LLM generated the original query
-            final_queries = list(dict.fromkeys(final_queries))
-            logger.debug(f"Final search queries: {final_queries}")
-            return final_queries
-        else:
-            logger.warning("LLM did not generate any valid sub-queries. Falling back to original query only.")
-            return [query]
-
+        chain = LLMChain(llm=llm, prompt=SUB_QUERY_PROMPT_TEMPLATE)
+        response = chain.run(query=query, num_queries=MULTI_QUERY_COUNT)
+        return [q.strip() for q in response.split('\n') if q.strip()]
     except Exception as e:
         logger.error(f"Error generating sub-queries: {e}", exc_info=True)
-        return [query] # Fallback
-# --- END MODIFICATION ---
+        return []
 
-def perform_rag_search(query: str) -> tuple[list[Document], str, dict[int, dict]]:
-    """
-    Performs RAG: generates sub-queries, searches vector store, deduplicates, formats context, creates citation map.
-    """
-    global vector_store
-    context_docs = []
-    formatted_context_text = "No relevant context was found in the available documents."
-    context_docs_map = {} # Use 1-based index for keys mapping to doc details
-
+def perform_rag_search(query: str) -> tuple[list[Document], str, dict]:
+    """Performs RAG search."""
     if not vector_store:
-        logger.warning("RAG search attempted but no vector store is loaded.")
-        return context_docs, formatted_context_text, context_docs_map
-    if not query or not query.strip():
-        logger.warning("RAG search attempted with empty query.")
-        return context_docs, formatted_context_text, context_docs_map
-
-    index_size = getattr(getattr(vector_store, 'index', None), 'ntotal', 0)
-    if index_size == 0:
-        logger.warning("RAG search attempted but the vector store index is empty.")
-        return context_docs, formatted_context_text, context_docs_map
-
+        logger.warning("Vector store not loaded/initialized. RAG search cannot be performed.")
+        return [], "Knowledge base is currently unavailable.", {}
     try:
-        # 1. Generate Sub-Queries
-        search_queries = generate_sub_queries(query)
-
-        # 2. Perform Similarity Search for each query
+        sub_queries = generate_sub_queries(query) if MULTI_QUERY_COUNT > 0 else []
+        all_queries = [query] + sub_queries
+        
         all_retrieved_docs_with_scores = []
-        # Retrieve k docs per query before deduplication
-        k_per_query = max(RAG_SEARCH_K_PER_QUERY, 1) # Ensure at least 1
-        logger.debug(f"Retrieving top {k_per_query} chunks for each of {len(search_queries)} queries.")
+        for q_idx, q_text in enumerate(all_queries):
+            # Using similarity_search_with_score to potentially de-duplicate or rank later
+            results_with_scores = vector_store.similarity_search_with_score(q_text, k=RAG_SEARCH_K_PER_QUERY)
+            all_retrieved_docs_with_scores.extend(results_with_scores)
 
-        for q_idx, q in enumerate(search_queries):
-            try:
-                # Use similarity_search_with_score to get scores for potential ranking/filtering later
-                retrieved = vector_store.similarity_search_with_score(q, k=k_per_query)
-                # Format: [(Document(page_content=..., metadata=...), score), ...]
-                all_retrieved_docs_with_scores.extend(retrieved)
-                logger.debug(f"Query {q_idx+1}/{len(search_queries)} ('{q[:50]}...') retrieved {len(retrieved)} chunks.")
-            except Exception as search_err:
-                logger.error(f"Error during similarity search for query '{q[:50]}...': {search_err}", exc_info=False) # Less verbose log
-
-        if not all_retrieved_docs_with_scores:
-            logger.info("No relevant chunks found in vector store for the query/sub-queries.")
-            return context_docs, formatted_context_text, context_docs_map
-
-        # 3. Deduplicate and Select Top Documents
-        # Key: (source_filename, chunk_index) Value: (Document, score)
+        # De-duplicate documents based on content and source, keeping the one with the best score (lower is better for L2/cosine)
         unique_docs_dict = {}
         for doc, score in all_retrieved_docs_with_scores:
-            source = doc.metadata.get('source', 'Unknown')
-            # Use chunk_index if available, otherwise maybe start_index or hash of content? Chunk_index preferred.
-            chunk_idx = doc.metadata.get('chunk_index', doc.metadata.get('start_index', -1))
-            doc_key = (source, chunk_idx)
-
-            # Consider content-based deduplication if metadata isn't reliable enough
-            # content_hash = hash(doc.page_content)
-            # doc_key = (source, content_hash)
-
-            if doc_key not in unique_docs_dict or score < unique_docs_dict[doc_key][1]: # Lower score (distance) is better
+            doc_key = (doc.metadata['source'], doc.page_content)
+            if doc_key not in unique_docs_dict or score < unique_docs_dict[doc_key][1]:
                 unique_docs_dict[doc_key] = (doc, score)
+        
+        # Sort unique documents by score and take top RAG_CHUNK_K
+        sorted_unique_docs = sorted(list(unique_docs_dict.values()), key=lambda item: item[1])
+        final_docs = [item[0] for item in sorted_unique_docs[:RAG_CHUNK_K]]
 
-        # Sort unique documents by score (ascending - best first)
-        sorted_unique_docs = sorted(unique_docs_dict.values(), key=lambda item: item[1])
+        if not final_docs:
+            logger.info(f"No relevant documents found for query: {query}")
+            return [], "No specific documents found for your query.", {}
 
-        # Select the final top RAG_CHUNK_K unique documents
-        final_context_docs_with_scores = sorted_unique_docs[:RAG_CHUNK_K]
-        context_docs = [doc for doc, score in final_context_docs_with_scores]
-
-        logger.info(f"Retrieved {len(all_retrieved_docs_with_scores)} chunks total across sub-queries. "
-                    f"Selected {len(context_docs)} unique chunks (target k={RAG_CHUNK_K}) for context.")
-
-        # 4. Format Context for LLM Prompt and Create Citation Map
-        formatted_context_parts = []
-        temp_map = {} # Use 1-based index for map keys, matching citations like [1], [2]
-        for i, doc in enumerate(context_docs):
-            citation_index = i + 1 # 1-based index for the prompt and map
-            source = doc.metadata.get('source', 'Unknown Source')
-            chunk_idx = doc.metadata.get('chunk_index', 'N/A')
-            content = doc.page_content
-
-            # Format for the LLM prompt
-            # Use 'Source' and 'Chunk Index' for clarity in the context block
-            context_str = f"[{citation_index}] Source: {source} | Chunk Index: {chunk_idx}\n{content}"
-            formatted_context_parts.append(context_str)
-
-            # Store data needed for frontend reference display, keyed by the citation number
-            temp_map[citation_index] = {
-                "source": source,
-                "chunk_index": chunk_idx, # Keep original chunk index if available
-                "content": content # Store full content for reference expansion/preview later
-            }
-
-        formatted_context_text = "\n\n---\n\n".join(formatted_context_parts) if formatted_context_parts else "No context chunks selected after processing."
-        context_docs_map = temp_map # Assign the populated map
-
+        context_text = "\n\n".join(f"[Chunk {i+1} from: {doc.metadata['source']}]\n{doc.page_content}" for i, doc in enumerate(final_docs))
+        # Map for citation: Key is citation number (1-based), value is details
+        docs_map = {i+1: {"source": doc.metadata['source'], "content": doc.page_content} for i, doc in enumerate(final_docs)}
+        
+        return final_docs, context_text, docs_map
     except Exception as e:
-        logger.error(f"Error during RAG search process for query '{query[:50]}...': {e}", exc_info=True)
-        # Reset results on error
-        context_docs = []
-        formatted_context_text = "Error retrieving context due to an internal server error."
-        context_docs_map = {}
+        logger.error(f"Error in RAG search: {e}", exc_info=True)
+        return [], "Error retrieving documents.", {}
 
-    # Return the list of Document objects, the formatted text for the LLM, and the citation map
-    return context_docs, formatted_context_text, context_docs_map
+# --- KG Related Functions ---
+def get_kg_filepath(doc_filename: str) -> str:
+    """Gets the expected filepath for a document's KG."""
+    base_name = os.path.splitext(doc_filename)[0]
+    kg_file = f"{base_name}{KG_FILENAME_SUFFIX}"
+    return os.path.join(KG_OUTPUT_FOLDER, kg_file)
 
-# --- MODIFIED: Added logging ---
-def synthesize_chat_response(query: str, context_text: str) -> tuple[str, str | None]:
+def load_knowledge_graph(doc_filename: str) -> dict | None:
+    """Loads the knowledge graph for a given document filename."""
+    kg_filepath = get_kg_filepath(doc_filename)
+    if os.path.exists(kg_filepath):
+        try:
+            with open(kg_filepath, 'r', encoding='utf-8') as f:
+                kg_data = json.load(f)
+            logger.info(f"Loaded KG for '{doc_filename}' from {kg_filepath}")
+            return kg_data
+        except Exception as e:
+            logger.error(f"Error loading KG JSON from {kg_filepath}: {e}", exc_info=True)
+    else:
+        logger.debug(f"No KG found for '{doc_filename}' at {kg_filepath}")
+    return None
+
+def format_kg_info_for_llm(kg_data: dict, query: str, max_insights: int = 3, max_details_per_node: int = 2) -> str:
     """
-    Generates the final chat response using the LLM, query, and context.
-    Requests and parses thinking/reasoning content using SYNTHESIS_PROMPT_TEMPLATE.
-
-    Returns:
-        tuple[str, str | None]: (user_answer, thinking_content)
+    Extracts and formats relevant KG information based on the query for LLM context.
     """
-    global llm
+    if not kg_data or not isinstance(kg_data, dict) or 'nodes' not in kg_data:
+        return ""
+
+    query_keywords = set(q.lower() for q in query.split() if len(q) > 3) # Keywords from query
+    
+    relevant_node_infos = []
+    nodes_by_id = {node.get('id'): node for node in kg_data.get('nodes', []) if isinstance(node, dict) and node.get('id')}
+
+    # Find nodes relevant to the query
+    for node_id, node_data in nodes_by_id.items():
+        description = node_data.get('description', '').lower()
+        node_id_lower = str(node_id).lower()
+        if any(keyword in description for keyword in query_keywords) or \
+           any(keyword in node_id_lower for keyword in query_keywords):
+            relevant_node_infos.append(node_data)
+    
+    if not relevant_node_infos:
+        return ""
+
+    output_str = "Key concepts and relationships from Knowledge Graph:\n"
+    insights_count = 0
+
+    for node in relevant_node_infos:
+        if insights_count >= max_insights:
+            break
+        
+        node_id = node.get('id')
+        desc = node.get('description', 'N/A')
+        node_type = node.get('type', 'Concept')
+        output_str += f"- Node: '{node_id}' (Type: {node_type})\n  Description: {desc}\n"
+        
+        # Find connected edges
+        related_count = 0
+        for edge in kg_data.get('edges', []):
+            if related_count >= max_details_per_node: break
+            if not isinstance(edge, dict): continue
+            
+            rel_from = edge.get('from')
+            rel_to = edge.get('to')
+            relationship = edge.get('relationship')
+
+            if rel_from == node_id and rel_to in nodes_by_id:
+                output_str += f"  - Relates to '{rel_to}' (via: {relationship})\n"
+                related_count +=1
+            elif rel_to == node_id and rel_from in nodes_by_id:
+                output_str += f"  - Is related from '{rel_from}' (via: {relationship})\n"
+                related_count +=1
+        insights_count += 1
+    
+    return output_str.strip() if insights_count > 0 else ""
+
+# --- End KG Related Functions ---
+
+
+def synthesize_chat_response(query: str, context_text: str, context_docs_map: dict) -> tuple[str, str]:
+    """Synthesizes chat response using RAG context and KG insights."""
     if not llm:
         logger.error("LLM not initialized, cannot synthesize response.")
-        return "Error: The AI model is currently unavailable.", None
-
-    # Use the prompt template from config
-    # Ensure the prompt template is correctly formatted and expects 'query' and 'context'
+        return "Error: AI model is not available.", ""
     try:
-        final_prompt = SYNTHESIS_PROMPT_TEMPLATE.format(query=query, context=context_text)
-        # Log the prompt before sending
-        logger.info(f"Sending synthesis prompt to LLM (model: {OLLAMA_MODEL})...")
-        logger.debug(f"Synthesis Prompt (Start):\n{final_prompt[:200]}...") # Log more chars if needed
+        # --- KG Integration ---
+        kg_derived_insights = ""
+        unique_source_files = set()
+        if context_docs_map: # Ensure there's RAG context to derive KG from
+            for doc_detail in context_docs_map.values():
+                unique_source_files.add(doc_detail['source'])
+        
+        if unique_source_files:
+            all_kg_texts = []
+            for source_file in unique_source_files:
+                kg_data = load_knowledge_graph(source_file)
+                if kg_data:
+                    formatted_kg_text = format_kg_info_for_llm(kg_data, query)
+                    if formatted_kg_text:
+                         all_kg_texts.append(f"For document '{source_file}':\n{formatted_kg_text}")
+            if all_kg_texts:
+                kg_derived_insights = "\n\n--- Knowledge Graph Insights ---\n" + "\n\n".join(all_kg_texts)
+        # --- End KG Integration ---
 
-    except KeyError as e:
-        logger.error(f"Error formatting SYNTHESIS_PROMPT_TEMPLATE: Missing key {e}. Check config.py.")
-        return "Error: Internal prompt configuration issue.", None
+        # Combine RAG context with KG insights
+        enriched_context = context_text + kg_derived_insights
+        logger.debug(f"Enriched context for LLM (len {len(enriched_context)}):\n{enriched_context[:1000]}...")
+
+
+        chain = LLMChain(llm=llm, prompt=SYNTHESIS_PROMPT_TEMPLATE)
+        # The prompt expects 'context' as the variable name for all contextual info
+        response_text = chain.run(query=query, context=enriched_context) 
+        
+        thinking = response_text.split('</thinking>')[0].replace('<thinking>', '').strip() if '</thinking>' in response_text else ""
+        answer = response_text.split('</thinking>')[-1].strip()
+        return answer, thinking
     except Exception as e:
-         logger.error(f"Error creating synthesis prompt: {e}", exc_info=True)
-         return "Error: Could not prepare the request for the AI model.", None
-
-    try:
-        # logger.info(f"Invoking LLM for chat synthesis (model: {OLLAMA_MODEL})...") # Already logged above
-        # Use .invoke() for ChatOllama which returns AIMessage, access content with .content
-        response_object = llm.invoke(final_prompt)
-        # Ensure response_object has 'content' attribute
-        full_llm_response = getattr(response_object, 'content', str(response_object))
-
-        # Log the raw response start
-        logger.info(f"LLM synthesis response received (length: {len(full_llm_response)}).")
-        logger.debug(f"Synthesis Raw Response (Start):\n{full_llm_response[:200]}...")
-
-        # Parse the response to separate thinking and answer using the utility function
-        user_answer, thinking_content = parse_llm_response(full_llm_response)
-
-        if thinking_content:
-            logger.info(f"Parsed thinking content (length: {len(thinking_content)}).")
-        else:
-            # This is expected if the LLM didn't include the tags or the prompt was adjusted
-            logger.debug("No <thinking> content found or parsed in the LLM response.")
+        logger.error(f"Error synthesizing chat response: {e}", exc_info=True)
+        return f"Error: Could not generate a response. {str(e)}", ""
 
 
-        if not user_answer and thinking_content:
-             logger.warning("Parsed user answer is empty after removing thinking block. The response might have only contained thinking.")
-             # Decide how to handle this - return thinking as answer, or a specific message?
-             # Let's return a message indicating this.
-             user_answer = "[AI response consisted only of reasoning. No final answer provided. See thinking process.]"
-        elif not user_answer and not thinking_content:
-             logger.error("LLM response parsing resulted in empty answer and no thinking content.")
-             user_answer = "[AI Response Processing Error: Empty result after parsing]"
-
-
-        # Basic check if the answer looks like an error message generated by the LLM itself
-        if user_answer.strip().startswith("Error:") or "sorry, I encountered an error" in user_answer.lower():
-            logger.warning(f"LLM synthesis seems to have resulted in an error message: '{user_answer[:100]}...'")
-
-        return user_answer.strip(), thinking_content # Return stripped answer and thinking
-
-    except Exception as e:
-        logger.error(f"LLM chat synthesis failed: {e}", exc_info=True)
-        error_message = f"Sorry, I encountered an error while generating the response ({type(e).__name__}). The AI model might be unavailable, timed out, or failed internally."
-        # Attempt to parse thinking even from error if possible? Unlikely to be useful.
-        return error_message, None
-# --- END MODIFICATION ---
-
-# --- MODIFIED: Added logging ---
-def generate_document_analysis(filename: str, analysis_type: str) -> tuple[str | None, str | None]:
-    """
-    Generates analysis (FAQ, Topics, Mindmap) for a specific document, optionally including thinking.
-    Uses ANALYSIS_PROMPTS from config. Retrieves text from cache or disk.
-
-    Returns:
-        tuple[str | None, str | None]: (analysis_content, thinking_content)
-                                    Returns (error_message, thinking_content) on failure.
-                                    Returns (None, None) if document text cannot be found/loaded.
-    """
-    global llm, document_texts_cache
-    logger.info(f"Starting analysis: type='{analysis_type}', file='{filename}'")
-
+def generate_document_analysis(filename: str, analysis_type: str) -> tuple[str, str]:
+    """Generates document analysis."""
+    import config # Explicit import
     if not llm:
-        logger.error("LLM not initialized, cannot perform analysis.")
-        return "Error: AI model is not available for analysis.", None
-
-    # --- Step 1: Get Document Text ---
-    doc_text = document_texts_cache.get(filename)
-    if not doc_text:
-        logger.warning(f"Text for '{filename}' not in cache. Attempting load from disk...")
-        # Determine the potential path (check uploads first, then defaults)
-        potential_paths = [
-            os.path.join(UPLOAD_FOLDER, filename),
-            os.path.join(DEFAULT_PDFS_FOLDER, filename)
-        ]
-        load_path = next((p for p in potential_paths if os.path.exists(p)), None)
-
-        if load_path:
-            logger.debug(f"Found '{filename}' at: {load_path}")
-            doc_text = extract_text_from_pdf(load_path) # Extract fresh if not cached
-            if doc_text:
-                document_texts_cache[filename] = doc_text # Cache it now
-                logger.info(f"Loaded and cached text for '{filename}' from {load_path} for analysis.")
+        logger.error("LLM not initialized, cannot generate document analysis.")
+        return "Error: AI model is not available.", ""
+    try:
+        text = document_texts_cache.get(filename)
+        if not text:
+            # Attempt to load from disk if not in cache
+            file_path_to_try = os.path.join(UPLOAD_FOLDER, filename)
+            if not os.path.exists(file_path_to_try):
+                file_path_to_try = os.path.join(DEFAULT_PDFS_FOLDER, filename)
+            
+            if os.path.exists(file_path_to_try):
+                logger.info(f"Text for '{filename}' not in cache, loading from {file_path_to_try} for analysis.")
+                text = extract_text_from_file(file_path_to_try)
+                if text:
+                    document_texts_cache[filename] = text # Cache it now
             else:
-                logger.error(f"Failed to extract text from '{filename}' at {load_path} even though file exists.")
-                # Return specific error if extraction fails
-                return f"Error: Could not extract text content from '{filename}'. File might be corrupted or empty.", None
-        else:
-            logger.error(f"Document file '{filename}' not found in default or upload folders for analysis.")
-            # Return error indicating file not found
-            return f"Error: Document '{filename}' not found.", None
+                logger.error(f"File '{filename}' not found for analysis.")
+                return None, "File not found."
 
-    # If after all checks, doc_text is still None or empty, something went wrong
-    if not doc_text:
-        logger.error(f"Analysis failed: doc_text is unexpectedly empty for '{filename}' after cache/disk checks.")
-        return f"Error: Failed to retrieve text content for '{filename}'.", None
+        if not text:
+            return None, "No text available for analysis."
 
-
-    # --- Step 2: Prepare Text for LLM (Truncation) ---
-    original_length = len(doc_text)
-    if original_length > ANALYSIS_MAX_CONTEXT_LENGTH:
-        logger.warning(f"Document '{filename}' text too long ({original_length} chars), truncating to {ANALYSIS_MAX_CONTEXT_LENGTH} for '{analysis_type}' analysis.")
-        # Truncate from the end, keeping the beginning
-        doc_text_for_llm = doc_text[:ANALYSIS_MAX_CONTEXT_LENGTH]
-        # Add a clear truncation marker
-        doc_text_for_llm += "\n\n... [CONTENT TRUNCATED DUE TO LENGTH LIMIT]"
-    else:
-        doc_text_for_llm = doc_text
-        logger.debug(f"Using full document text ({original_length} chars) for analysis '{analysis_type}'.")
-
-    # --- Step 3: Get Analysis Prompt ---
-    prompt_template = ANALYSIS_PROMPTS.get(analysis_type)
-    if not prompt_template or not isinstance(prompt_template, PromptTemplate):
-        logger.error(f"Invalid or missing analysis prompt template for type: {analysis_type} in config.py")
-        return f"Error: Invalid analysis type '{analysis_type}' or misconfigured prompt.", None
-
-    try:
-        # Ensure the template expects 'doc_text_for_llm'
-        final_prompt = prompt_template.format(doc_text_for_llm=doc_text_for_llm)
-        # Log the prompt before sending
-        logger.info(f"Sending analysis prompt to LLM (type: {analysis_type}, file: {filename}, model: {OLLAMA_MODEL})...")
-        logger.debug(f"Analysis Prompt (Start):\n{final_prompt[:200]}...")
-
-    except KeyError as e:
-        logger.error(f"Error formatting ANALYSIS_PROMPTS[{analysis_type}]: Missing key {e}. Check config.py.")
-        return f"Error: Internal prompt configuration issue for {analysis_type}.", None
+        chain = LLMChain(llm=llm, prompt=config.ANALYSIS_PROMPTS[analysis_type])
+        # Ensure text is not excessively long for this type of analysis
+        response_text = chain.run(doc_text_for_llm=text[:ANALYSIS_MAX_CONTEXT_LENGTH]) 
+        thinking = response_text.split('</thinking>')[0].replace('<thinking>', '').strip() if '</thinking>' in response_text else ""
+        content = response_text.split('</thinking>')[-1].strip()
+        return content, thinking
     except Exception as e:
-        logger.error(f"Error creating analysis prompt for {analysis_type}: {e}", exc_info=True)
-        return f"Error: Could not prepare the request for the {analysis_type} analysis.", None
+        logger.error(f"Error in document analysis for '{filename}': {e}", exc_info=True)
+        return f"Error: {str(e)}", ""
 
-
-    # --- Step 4: Call LLM and Parse Response ---
+# Knowledge Graph Generation (largely same, but saving part needs update)
+def _initialize_kg_ollama_client() -> ollama.Client | None:
+    global _kg_ollama_client
+    if _kg_ollama_client:
+        return _kg_ollama_client
     try:
-        # logger.info(f"Invoking LLM for '{analysis_type}' analysis of '{filename}' (model: {OLLAMA_MODEL})...") # Already logged above
-        # Use .invoke() for ChatOllama
-        response_object = llm.invoke(final_prompt)
-        full_analysis_response = getattr(response_object, 'content', str(response_object))
-
-        # Log the raw response start
-        logger.info(f"LLM analysis response received for '{filename}' ({analysis_type}). Length: {len(full_analysis_response)}")
-        logger.debug(f"Analysis Raw Response (Start):\n{full_analysis_response[:200]}...")
-
-        # Parse potential thinking and main content using the utility function
-        analysis_content, thinking_content = parse_llm_response(full_analysis_response)
-
-        if thinking_content:
-            logger.info(f"Parsed thinking content from analysis response for '{filename}'.")
-        # else: logger.debug(f"No thinking content found in analysis response for '{filename}'.") # Normal if not requested/provided
-
-        if not analysis_content and thinking_content:
-            logger.warning(f"Parsed analysis content is empty for '{filename}' ({analysis_type}). Response only contained thinking.")
-            analysis_content = "[Analysis consisted only of reasoning. No final output provided. See thinking process.]"
-        elif not analysis_content and not thinking_content:
-            logger.error(f"LLM analysis response parsing resulted in empty content and no thinking for '{filename}' ({analysis_type}).")
-            analysis_content = "[Analysis generation resulted in empty content after parsing.]"
-
-
-        # Optional: Basic format validation could be added here if needed (e.g., check for Q:/A: in FAQ)
-
-        logger.info(f"Analysis successful for '{filename}' ({analysis_type}).")
-        return analysis_content.strip(), thinking_content # Return success tuple
-
+        logger.info(f"Initializing KG Ollama client: {OLLAMA_BASE_URL}, model={KG_MODEL}")
+        _kg_ollama_client = ollama.Client(host=OLLAMA_BASE_URL)
+        _kg_ollama_client.list() # Test connection
+        logger.info("KG Ollama client initialized.")
+        return _kg_ollama_client
     except Exception as e:
-        logger.error(f"LLM analysis invocation error for {filename} ({analysis_type}): {e}", exc_info=True)
-        # Try to return error message with thinking if parsing happened before error? Unlikely.
-        return f"Error generating analysis: AI model failed ({type(e).__name__}). Check logs for details.", None
-# --- END MODIFICATION ---
+        logger.error(f"Failed to initialize KG Ollama client: {e}", exc_info=True)
+        _kg_ollama_client = None
+        return None
 
-def split_into_chunks(text, chunk_size=2048, overlap=256):
-    """Split text into overlapping chunks for processing."""
+def _kg_split_into_chunks(text: str, chunk_size: int, overlap: int) -> list[str]:
+    logger.info(f"KG: Splitting text into chunks (size={chunk_size}, overlap={overlap})...")
     chunks = []
     start = 0
     text_len = len(text)
@@ -699,64 +402,305 @@ def split_into_chunks(text, chunk_size=2048, overlap=256):
         end = min(start + chunk_size, text_len)
         chunks.append(text[start:end])
         next_start = end - overlap
-        start = max(next_start, start + 1) if end < text_len else end
+        # Ensure progress, especially with small texts or large overlaps
+        if next_start <= start and end < text_len :
+            start = start + 1 
+        else:
+            start = next_start if end < text_len else end
+    logger.info(f"KG: Split into {len(chunks)} chunks.")
     return chunks
 
-def merge_graphs(graphs):
-    """Merge multiple knowledge graphs into a single graph."""
-    final_nodes = {}
-    final_edges = set()  # Use a set to automatically handle duplicate edges
 
-    for graph in graphs:
-        if not isinstance(graph, dict) or 'nodes' not in graph or 'edges' not in graph:
+def _kg_process_single_chunk(chunk_data: tuple[int, str], ollama_client_instance: ollama.Client, model_name: str, prompt_template_str: str) -> dict | None:
+    index, chunk_text = chunk_data
+    chunk_num = index + 1
+    
+    # The KG_PROMPT_TEMPLATE from config.py is already escaped correctly
+    full_prompt = prompt_template_str.format(chunk_text=chunk_text) 
+    
+    if not ollama_client_instance:
+        logger.error(f"KG: Ollama client not available for chunk {chunk_num}.")
+        return None
+    try:
+        response = ollama_client_instance.chat(
+            model=model_name,
+            messages=[{"role": "user", "content": full_prompt}],
+            format="json", # Ollama should handle this based on model capabilities
+            options={"num_ctx": 4096, "temperature": 0.3} # Example options
+        )
+        content = response.get('message', {}).get('content', '')
+        if not content:
+            logger.warning(f"KG: Empty response for chunk {chunk_num}")
+            return {}
+        
+        # Basic cleanup for ```json ... ``` markdown blocks if model adds them
+        if content.strip().startswith('```json'):
+            content = content.strip()[7:-3].strip()
+        elif content.strip().startswith('```'): # More generic ``` removal
+            content = content.strip()[3:-3].strip()
+            
+        graph_data = json.loads(content) # Expecting JSON directly now
+        
+        # Validate basic structure
+        if isinstance(graph_data, dict) and \
+           'nodes' in graph_data and isinstance(graph_data['nodes'], list) and \
+           'edges' in graph_data and isinstance(graph_data['edges'], list):
+            return graph_data
+        
+        logger.warning(f"KG: Invalid graph structure for chunk {chunk_num}. Content: {content[:200]}...")
+        return {}
+    except json.JSONDecodeError as je:
+        logger.error(f"KG: JSON Decode Error processing chunk {chunk_num}: {je}. Content: {content[:500]}...", exc_info=False) # Don't need full exc_info for common JSON error
+        return {}
+    except Exception as e:
+        logger.error(f"KG: Error processing chunk {chunk_num}: {e}", exc_info=True)
+        return {}
+
+def _kg_merge_graphs(graphs: list[dict]) -> dict:
+    logger.info("KG: Merging graph fragments...")
+    final_nodes = {} # Use dict for easy de-duplication and update
+    final_edges = set() # Use set of tuples for de-duplication
+
+    for i, graph_fragment in enumerate(graphs):
+        if graph_fragment is None:
+            logger.warning(f"KG: Skipping None graph fragment at index {i}.")
+            continue
+        if not isinstance(graph_fragment, dict) or 'nodes' not in graph_fragment or 'edges' not in graph_fragment:
+            logger.warning(f"KG: Skipping invalid graph fragment at index {i}")
             continue
 
         # Process nodes
-        if isinstance(graph['nodes'], list):
-            for node in graph['nodes']:
-                if not isinstance(node, dict):
-                    continue
-                node_id = node.get('id')
-                if not node_id or not isinstance(node_id, str):
-                    continue
-                if node_id not in final_nodes:
-                    final_nodes[node_id] = node
-                else:
-                    # Merge descriptions if needed
-                    existing_desc = final_nodes[node_id].get('description', '')
-                    new_desc = node.get('description', '')
-                    if isinstance(new_desc, str) and len(new_desc) > len(existing_desc):
-                        final_nodes[node_id]['description'] = new_desc
-                    # Update parent and type if previously null
-                    if final_nodes[node_id].get('parent') is None and node.get('parent') is not None:
-                        final_nodes[node_id]['parent'] = node.get('parent')
-                    if final_nodes[node_id].get('type') is None and node.get('type') is not None:
-                        final_nodes[node_id]['type'] = node.get('type')
+        for node in graph_fragment.get('nodes', []):
+            if not isinstance(node, dict):
+                logger.warning(f"KG: Skipping non-dict node in fragment {i}: {node}")
+                continue
+            node_id = node.get('id')
+            if not node_id or not isinstance(node_id, str): # Ensure ID is a non-empty string
+                logger.warning(f"KG: Skipping node with invalid or missing ID in fragment {i}: {node}")
+                continue
+            
+            if node_id not in final_nodes:
+                final_nodes[node_id] = node
+            else:
+                # Merge properties, e.g., longer description, fill missing parent/type
+                existing_node = final_nodes[node_id]
+                for key in ['description', 'type', 'parent']:
+                    if node.get(key) and (not existing_node.get(key) or len(str(node.get(key))) > len(str(existing_node.get(key)))):
+                         if key == 'parent' and node.get(key) == node_id: continue # Avoid self-parenting from merge
+                         existing_node[key] = node.get(key)
+
 
         # Process edges
-        if isinstance(graph['edges'], list):
-            for edge in graph['edges']:
-                if not isinstance(edge, dict):
-                    continue
-                if not all(k in edge for k in ['from', 'to', 'relationship']):
-                    continue
+        for edge in graph_fragment.get('edges', []):
+            if not isinstance(edge, dict) or not all(k in edge for k in ['from', 'to', 'relationship']):
+                logger.warning(f"KG: Skipping invalid edge (missing keys) in fragment {i}: {edge}")
+                continue
+            # Ensure all parts of an edge are strings and not empty
+            if not all(isinstance(edge.get(k), str) and edge.get(k) for k in ['from', 'to', 'relationship']):
+                logger.warning(f"KG: Skipping edge with non-string or empty components in fragment {i}: {edge}")
+                continue
+            # Avoid self-loops if not desired, or ensure nodes exist
+            if edge['from'] == edge['to']: # Optional: disallow self-loops
+                # logger.debug(f"KG: Skipping self-loop edge: {edge}")
+                continue
+            edge_tuple = (edge['from'], edge['to'], edge['relationship'])
+            final_edges.add(edge_tuple)
 
-                from_node = edge['from']
-                to_node = edge['to']
-                relationship = edge['relationship']
+    # Convert back to list format
+    merged_graph_nodes = list(final_nodes.values())
+    merged_graph_edges = [{"from": e[0], "to": e[1], "relationship": e[2]} for e in final_edges]
+    
+    # Filter out edges where 'from' or 'to' node doesn't exist in the final_nodes list
+    # This can happen if chunks produce partial relationships
+    valid_node_ids = set(n['id'] for n in merged_graph_nodes)
+    final_merged_edges = [edge for edge in merged_graph_edges if edge['from'] in valid_node_ids and edge['to'] in valid_node_ids]
 
-                if not all(isinstance(x, str) for x in [from_node, to_node, relationship]):
-                    continue
+    merged_graph = {"nodes": merged_graph_nodes, "edges": final_merged_edges}
+    logger.info(f"KG: Merged into {len(merged_graph['nodes'])} nodes, {len(merged_graph['edges'])} edges.")
+    return merged_graph
 
-                edge_tuple = (from_node, to_node, relationship)
-                final_edges.add(edge_tuple)
 
-    # Convert the set of edge tuples back to a list of dictionaries
-    final_edge_list = [{"from": e[0], "to": e[1], "relationship": e[2]} for e in final_edges]
+def _kg_save_graph(graph: dict, original_doc_filename: str):
+    """Saves the graph to a file named after the original document."""
+    kg_filepath = get_kg_filepath(original_doc_filename)
+    try:
+        logger.info(f"KG: Saving graph for '{original_doc_filename}' to {kg_filepath}...")
+        os.makedirs(os.path.dirname(kg_filepath), exist_ok=True)
+        with open(kg_filepath, 'w', encoding='utf-8') as f:
+            json.dump(graph, f, indent=2, ensure_ascii=False)
+        logger.info(f"KG: Graph for '{original_doc_filename}' saved to {kg_filepath}.")
+    except Exception as e:
+        logger.error(f"Failed to save graph to {kg_filepath}: {e}", exc_info=True)
 
-    return {
-        "nodes": list(final_nodes.values()),
-        "edges": final_edge_list
-    }
+
+def generate_knowledge_graph_from_pdf(doc_filename: str) -> dict | None: # Renamed from generate_knowledge_graph_from_pdf for clarity
+    """
+    Generates a knowledge graph from a PDF or PPT file, saving it named after the doc.
+    'doc_filename' is the base name of the file, e.g., "MyDocument.pdf".
+    """
+    global document_texts_cache
+    kg_ollama_client = _initialize_kg_ollama_client()
+    if not kg_ollama_client:
+        logger.error(f"KG: Cannot generate graph for '{doc_filename}'. KG Ollama client not initialized.")
+        return None
+
+    logger.info(f"KG: Generating Knowledge Graph for '{doc_filename}'...")
+    
+    doc_text = document_texts_cache.get(doc_filename)
+    if not doc_text:
+        logger.debug(f"KG: '{doc_filename}' not in cache. Attempting to load from disk...")
+        # Determine full path (check UPLOAD_FOLDER first, then DEFAULT_PDFS_FOLDER)
+        file_path_to_load = os.path.join(UPLOAD_FOLDER, doc_filename)
+        if not os.path.exists(file_path_to_load):
+            file_path_to_load = os.path.join(DEFAULT_PDFS_FOLDER, doc_filename)
+
+        if os.path.exists(file_path_to_load):
+            logger.info(f"KG: Found '{doc_filename}' at {file_path_to_load}. Extracting text...")
+            doc_text = extract_text_from_file(file_path_to_load)
+            if doc_text:
+                document_texts_cache[doc_filename] = doc_text # Cache it
+                logger.info(f"KG: Cached text for '{doc_filename}' from {file_path_to_load}.")
+            else:
+                logger.error(f"KG: Failed to extract text from '{doc_filename}' at {file_path_to_load}.")
+                return None
+        else:
+            logger.error(f"KG: File '{doc_filename}' not found in {UPLOAD_FOLDER} or {DEFAULT_PDFS_FOLDER}.")
+            return None
+
+    if not doc_text.strip(): # Check if text is not just whitespace
+        logger.error(f"KG: No actual text content available for '{doc_filename}' to generate graph.")
+        return None
+
+    chunks = _kg_split_into_chunks(doc_text, chunk_size=KG_CHUNK_SIZE, overlap=KG_CHUNK_OVERLAP)
+    if not chunks:
+        logger.warning(f"KG: No chunks generated for '{doc_filename}'. KG generation aborted.")
+        return None
+
+    logger.info(f"KG: Processing {len(chunks)} chunks for '{doc_filename}' using {KG_MAX_WORKERS} workers with model {KG_MODEL}.")
+    all_partial_graphs = []
+    # Use KG_PROMPT_TEMPLATE from config
+    prompt_for_chunks = KG_PROMPT_TEMPLATE 
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=KG_MAX_WORKERS) as executor:
+        # Prepare tasks: tuple of (index, chunk_text)
+        tasks = [(i, chunk) for i, chunk in enumerate(chunks)]
+        # Submit tasks and map futures back to their original index for logging/debugging
+        future_to_index = {
+            executor.submit(_kg_process_single_chunk, task_data, kg_ollama_client, KG_MODEL, prompt_for_chunks): task_data[0] 
+            for task_data in tasks
+        }
+        
+        for future in tqdm(concurrent.futures.as_completed(future_to_index), total=len(tasks), desc=f"KG: Processing Chunks ({doc_filename})", unit="chunk"):
+            original_chunk_index = future_to_index[future]
+            try:
+                graph_data_fragment = future.result()
+                if graph_data_fragment:
+                    all_partial_graphs.append(graph_data_fragment)
+            except Exception as e: # This catches exceptions from _kg_process_single_chunk if not caught inside
+                logger.error(f"KG: Uncaught error from chunk {original_chunk_index + 1} processing for '{doc_filename}': {e}", exc_info=True)
+
+    logger.info(f"KG: Processed {len(all_partial_graphs)} valid graph fragments for '{doc_filename}' from {len(chunks)} chunks.")
+
+    if not all_partial_graphs:
+        logger.error(f"KG: No valid graph fragments generated for '{doc_filename}'. Cannot merge.")
+        return None
+
+    final_graph = _kg_merge_graphs(all_partial_graphs)
+    
+    # Save graph using the original document filename to create the KG filename
+    _kg_save_graph(final_graph, doc_filename) 
+
+    logger.info(f"KG: Knowledge graph generation for '{doc_filename}' complete.")
+    return final_graph
+
+
+# Main Execution / Test
+if __name__ == "__main__":
+    # Basic logging for testing
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - [%(name)s:%(lineno)d] - %(message)s")
+    
+    # Setup directories (idempotent)
+    for dir_path in [DEFAULT_PDFS_FOLDER, UPLOAD_FOLDER, FAISS_FOLDER, KG_OUTPUT_FOLDER]:
+        os.makedirs(dir_path, exist_ok=True)
+    
+    logger.info("AI Core Testing (with KG Integration)...")
+    
+    # 1. Initialize AI components (LLM, Embeddings)
+    embeddings_instance, llm_instance = initialize_ai_components()
+    if not embeddings_instance or not llm_instance:
+        logger.error("Failed to initialize core AI components. Aborting test.")
+        exit()
+    
+    # 2. Load vector store (it might be empty initially)
+    load_vector_store()
+
+    # 3. Create a dummy PDF for testing (if it doesn't exist)
+    dummy_pdf_name = "DevOps-Test-KG.pdf"
+    dummy_pdf_path = os.path.join(DEFAULT_PDFS_FOLDER, dummy_pdf_name)
+    
+    # if not os.path.exists(dummy_pdf_path):
+    #     try:
+    #         from reportlab.pdfgen import canvas
+    #         from reportlab.lib.pagesizes import letter
+    #         logger.info(f"Creating dummy PDF: {dummy_pdf_path}")
+    #         c = canvas.Canvas(dummy_pdf_path, pagesize=letter)
+    #         c.drawString(72, 800, "DevOps Test Document for Knowledge Graph")
+    #         c.drawString(72, 780, "This document covers Continuous Integration (CI) and Continuous Deployment (CD).")
+    #         c.drawString(72, 760, "Key tools include Jenkins for CI, and Docker for containerization.")
+    #         c.drawString(72, 740, "Kubernetes is used for orchestrating Docker containers.")
+    #         c.drawString(72, 720, "Monitoring is crucial in DevOps, often using Prometheus.")
+    #         c.save()
+    #         logger.info(f"Dummy PDF '{dummy_pdf_name}' created.")
+    #     except ImportError:
+    #         logger.warning("ReportLab not installed. Cannot create dummy PDF. Please create it manually for testing.")
+    #     except Exception as e:
+    #         logger.error(f"Error creating dummy PDF: {e}")
+
+    if os.path.exists(dummy_pdf_path):
+        # 4. Process the dummy PDF: extract text, chunk, add to vector store
+        logger.info(f"Processing '{dummy_pdf_name}' for RAG...")
+        text_content = extract_text_from_file(dummy_pdf_path)
+        if text_content:
+            document_texts_cache[dummy_pdf_name] = text_content # Cache it
+            chunks = create_chunks_from_text(text_content, dummy_pdf_name)
+            if chunks:
+                add_documents_to_vector_store(chunks)
+                logger.info(f"'{dummy_pdf_name}' processed and added to vector store.")
+            else:
+                logger.error(f"Could not create chunks for '{dummy_pdf_name}'.")
+        else:
+            logger.error(f"Could not extract text from '{dummy_pdf_name}'.")
+
+        # 5. Generate Knowledge Graph for the dummy PDF
+        logger.info(f"Testing KG generation for {dummy_pdf_name}...")
+        kg_result = generate_knowledge_graph_from_pdf(dummy_pdf_name) # Pass base filename
+        if kg_result:
+            logger.info(f"KG for '{dummy_pdf_name}' generated: {len(kg_result.get('nodes',[]))} nodes, {len(kg_result.get('edges',[]))} edges.")
+            kg_file_expected = get_kg_filepath(dummy_pdf_name)
+            logger.info(f"KG saved to: {kg_file_expected}")
+        else:
+            logger.error(f"Failed to generate KG for '{dummy_pdf_name}'.")
+    else:
+        logger.warning(f"Dummy PDF '{dummy_pdf_name}' not found. Skipping RAG and KG generation tests for it.")
+
+    # 6. Test chat response with RAG and KG integration
+    test_query = "What is CI/CD and what tools are used?"
+    logger.info(f"\nTesting chat with query: '{test_query}'")
+    
+    if vector_store: # Ensure RAG can even attempt
+        rag_docs, rag_context_text, rag_docs_map = perform_rag_search(test_query)
+        logger.info(f"RAG found {len(rag_docs)} documents for the query.")
+        logger.debug(f"RAG context text: {rag_context_text[:300]}...")
+        
+        answer, thinking = synthesize_chat_response(test_query, rag_context_text, rag_docs_map)
+        
+        logger.info(f"\n--- Test Chat Response ---")
+        logger.info(f"Thinking:\n{thinking}")
+        logger.info(f"Answer:\n{answer}")
+        logger.info(f"--- End Test Chat Response ---")
+    else:
+        logger.warning("Vector store not available. Skipping chat test.")
+        
+    logger.info("\nAI Core test (with KG integration) completed.")
 
 # --- END OF FILE ai_core.py ---

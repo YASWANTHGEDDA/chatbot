@@ -5,7 +5,7 @@ const { tempAuth } = require('../middleware/authMiddleware');
 const ChatHistory = require('../models/ChatHistory');
 const { v4: uuidv4 } = require('uuid');
 const { generateContentWithHistory } = require('../services/geminiService');
-const notebookService = require('../services/notebookService');
+const { getKnowledgeGraphData, formatKGDataForContext } = require('../services/kgService');
 
 const router = express.Router();
 
@@ -77,7 +77,7 @@ router.post('/rag', tempAuth, async (req, res) => {
 // --- @route   POST /api/chat/message ---
 // Use tempAuth middleware
 router.post('/message', tempAuth, async (req, res) => {
-    const { message, history, sessionId, systemPrompt, isRagEnabled, relevantDocs } = req.body;
+    const { message, history, sessionId, systemPrompt, isRagEnabled, relevantDocs, isKgEnabled } = req.body;
     const userId = req.user._id.toString(); // req.user is guaranteed by tempAuth
 
     // --- Input Validations ---
@@ -85,49 +85,38 @@ router.post('/message', tempAuth, async (req, res) => {
     if (!sessionId || typeof sessionId !== 'string') return res.status(400).json({ message: 'Session ID required.' });
     if (!Array.isArray(history)) return res.status(400).json({ message: 'Invalid history format.'});
     const useRAG = !!isRagEnabled; // Ensure boolean
+    const useKG = !!isKgEnabled; // Ensure boolean for Knowledge Graph
 
-    // --- Intent Detection for Greetings/Small Talk ---
-    const greetings = ['hi', 'hello', 'hey', 'good morning', 'good evening', 'how are you', 'what\'s up', 'how is it going'];
-    const lowerMsg = message.trim().toLowerCase();
-    const isGreeting = greetings.some(greet => lowerMsg.startsWith(greet) || lowerMsg === greet);
-
-    if (isGreeting) {
-        try {
-            // Prepare minimal history for Gemini
-            const historyForGemini = [
-                ...history,
-                { role: "user", parts: [{ text: message.trim() }] }
-            ];
-            const geminiResponseText = await generateContentWithHistory(historyForGemini, systemPrompt);
-            const modelResponseMessage = {
-                role: 'model',
-                parts: [{ text: geminiResponseText }],
-                timestamp: new Date()
-            };
-            return res.status(200).json({ reply: modelResponseMessage });
-        } catch (error) {
-            console.error(`!!! Error processing greeting/small talk for session ${sessionId}:`, error);
-            let statusCode = error.status || 500;
-            let clientMessage = error.message || "Failed to get response from AI service.";
-            if (error.originalError && statusCode === 500) {
-                clientMessage = "An internal server error occurred while processing the AI response.";
-            }
-            return res.status(statusCode).json({ message: clientMessage });
-        }
-    }
-
-    console.log(`>>> POST /api/chat/message: User=${userId}, Session=${sessionId}, RAG=${useRAG} (TEMP AUTH)`);
+    console.log(`>>> POST /api/chat/message: User=${userId}, Session=${sessionId}, RAG=${useRAG}, KG=${useKG} (TEMP AUTH)`);
 
     let contextString = "";
     let citationHints = []; // Store hints for the LLM
+    let kgData = null; // Store Knowledge Graph data
 
     try {
+        // --- Query Knowledge Graph if enabled ---
+        if (useKG) {
+            console.log(`   KG Enabled: Querying Knowledge Graph for user ${userId}`);
+            try {
+                // Query KG service with user query and relevant docs (if available)
+                kgData = await getKnowledgeGraphData(
+                    message.trim(), 
+                    userId, 
+                    useRAG && Array.isArray(relevantDocs) ? relevantDocs : []
+                );
+                console.log(`   Retrieved Knowledge Graph data: ${kgData.nodes?.length || 0} nodes, ${kgData.edges?.length || 0} edges`);
+            } catch (kgError) {
+                console.error(`   Error querying Knowledge Graph: ${kgError.message}`);
+                // Continue without KG data on error
+            }
+        }
+
         // --- Construct Context from RAG Results (if enabled and docs provided) ---
         // Use relevantDocs passed from the client (which called /rag first)
         if (useRAG && Array.isArray(relevantDocs) && relevantDocs.length > 0) {
             console.log(`   RAG Enabled: Processing ${relevantDocs.length} relevant documents provided by client.`);
             // Using the slightly relaxed prompt suggestion:
-            contextString = "Answer the user's question based primarily on the following context documents.\nIf the context documents do not contain the necessary information to answer the question fully, clearly state what information is missing from the context *before* potentially providing an answer based on your general knowledge.\n\n--- Context Documents ---\n";
+            contextString = "Answer the user's question based primarily on the following context information.\nIf the context does not contain the necessary information to answer the question fully, clearly state what information is missing from the context *before* potentially providing an answer based on your general knowledge.\n\n--- Context Documents ---\n";
             relevantDocs.forEach((doc, index) => {
                 // --- MODIFICATION START ---
                 // Validate doc structure (check for 'content' now)
@@ -144,10 +133,28 @@ router.post('/message', tempAuth, async (req, res) => {
                 contextString += `\n[${index + 1}] Source: ${docName} ${score}\nContent:\n${fullContent}\n---\n`; // Added separator for readability
                 citationHints.push(`[${index + 1}] ${docName}`); // Hint for LLM citation
             });
-            contextString += "\n--- End of Context ---\n\n";
+            contextString += "\n--- End of Context Documents ---\n\n";
             console.log(`   Constructed context string using full content. ${citationHints.length} valid docs used.`);
         } else {
             console.log(`   RAG Disabled or no relevant documents provided by client.`);
+        }
+        
+        // --- Add Knowledge Graph data to context if available ---
+        if (useKG && kgData && (kgData.nodes?.length > 0 || kgData.edges?.length > 0)) {
+            // If we already have RAG context, add a separator
+            if (contextString) {
+                contextString += "\n";
+            } else {
+                // If no RAG context, start with a basic instruction
+                contextString = "Answer the user's question based on the following context information.\nIf the context does not contain the necessary information to answer the question fully, clearly state what information is missing.\n\n";
+            }
+            
+            // Format KG data and add to context
+            const kgContextString = formatKGDataForContext(kgData);
+            contextString += kgContextString;
+            console.log(`   Added Knowledge Graph data to context: ${kgData.nodes.length} concepts, ${kgData.edges.length} relationships`);
+        } else if (useKG) {
+            console.log(`   KG Enabled but no relevant Knowledge Graph data available.`);
         }
         // --- End Context Construction ---
 
@@ -159,9 +166,24 @@ router.post('/message', tempAuth, async (req, res) => {
 
         // --- Construct Final User Query Text for Gemini ---
         let finalUserQueryText = "";
-        if (useRAG && contextString) {
-            const citationInstruction = `When referencing information ONLY from the context documents provided above, please cite the source using the format [Number] Document Name (e.g., ${citationHints.slice(0, 3).join(', ')}).`; // Show first few hints
-            finalUserQueryText = `CONTEXT:\n${contextString}\nINSTRUCTIONS: ${citationInstruction}\n\nUSER QUESTION: ${message.trim()}`;
+        if (contextString) {
+            let citationInstruction = "";
+            
+            // Add citation instructions only if we have RAG documents with citations
+            if (useRAG && citationHints.length > 0) {
+                citationInstruction = `When referencing information from the context documents, please cite the source using the format [Number] Document Name (e.g., ${citationHints.slice(0, 3).join(', ')}).`;
+            }
+            
+            // Add KG usage instructions if KG data is present
+            if (useKG && kgData && (kgData.nodes?.length > 0 || kgData.edges?.length > 0)) {
+                if (citationInstruction) {
+                    citationInstruction += " When using information from the Knowledge Graph, mention that it comes from the structured knowledge.";
+                } else {
+                    citationInstruction = "When using information from the Knowledge Graph, mention that it comes from the structured knowledge.";
+                }
+            }
+            
+            finalUserQueryText = `CONTEXT:\n${contextString}\n${citationInstruction ? `INSTRUCTIONS: ${citationInstruction}\n\n` : ""}USER QUESTION: ${message.trim()}`;
         } else {
             finalUserQueryText = message.trim();
         }
@@ -199,7 +221,6 @@ router.post('/message', tempAuth, async (req, res) => {
         res.status(statusCode).json({ message: clientMessage });
     }
 });
-
 
 // --- @route   POST /api/chat/history ---
 // (No changes needed in this route)
@@ -254,7 +275,6 @@ router.post('/history', tempAuth, async (req, res) => {
     }
 });
 
-
 // --- @route   GET /api/chat/sessions ---
 // (No changes needed in this route)
 router.get('/sessions', tempAuth, async (req, res) => {
@@ -289,7 +309,6 @@ router.get('/sessions', tempAuth, async (req, res) => {
     }
 });
 
-
 // --- @route   GET /api/chat/session/:sessionId ---
 // (No changes needed in this route)
 router.get('/session/:sessionId', tempAuth, async (req, res) => {
@@ -303,94 +322,6 @@ router.get('/session/:sessionId', tempAuth, async (req, res) => {
     } catch (error) {
         console.error(`Error fetching chat session ${sessionId} for user ${userId}:`, error);
         res.status(500).json({ message: 'Failed to retrieve chat session details.' });
-    }
-});
-
-router.post('/', tempAuth, async (req, res) => {
-    try {
-        const { message } = req.body;
-        const userId = req.user.id;
-
-        if (!message) {
-            return res.status(400).json({ error: 'Message is required' });
-        }
-
-        // 1. Query Notebook backend for enhanced context
-        let notebookResponse;
-        try {
-            notebookResponse = await notebookService.queryNotebook(userId, message);
-        } catch (notebookError) {
-            console.warn('Notebook query failed:', notebookError);
-            // Continue without notebook response
-        }
-
-        // 2. Query Python RAG service
-        let ragResponse;
-        try {
-            ragResponse = await queryPythonRagService(userId, message);
-        } catch (ragError) {
-            console.warn('RAG query failed:', ragError);
-            // Continue without RAG response
-        }
-
-        // 3. Prepare context from both sources
-        let contextText = '';
-        if (notebookResponse) {
-            contextText += `Notebook Context:\n${notebookResponse.answer}\n\n`;
-            if (notebookResponse.thinking) {
-                contextText += `Reasoning:\n${notebookResponse.thinking}\n\n`;
-            }
-        }
-        if (ragResponse && ragResponse.context) {
-            contextText += `RAG Context:\n${ragResponse.context}\n\n`;
-        }
-
-        // 4. Generate response using Gemini
-        const chatHistory = await ChatHistory.find({ userId }).sort({ timestamp: 1 });
-        const formattedHistory = chatHistory.map(msg => ({
-            role: msg.role,
-            parts: [{ text: msg.content }]
-        }));
-
-        // Add current message to history
-        formattedHistory.push({
-            role: 'user',
-            parts: [{ text: message }]
-        });
-
-        const response = await generateContentWithHistory(
-            formattedHistory,
-            contextText || null,
-            ragResponse?.references || []
-        );
-
-        // 5. Save the interaction
-        const newMessage = new ChatHistory({
-            userId,
-            role: 'user',
-            content: message,
-            timestamp: new Date()
-        });
-
-        const newResponse = new ChatHistory({
-            userId,
-            role: 'assistant',
-            content: response,
-            timestamp: new Date()
-        });
-
-        await Promise.all([newMessage.save(), newResponse.save()]);
-
-        // 6. Send response
-        res.json({
-            response,
-            references: ragResponse?.references || [],
-            notebookReferences: notebookResponse?.references || []
-        });
-
-    } catch (error) {
-        console.error('Chat error:', error);
-        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

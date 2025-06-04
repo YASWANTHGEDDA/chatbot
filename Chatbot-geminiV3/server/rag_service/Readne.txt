@@ -9,4 +9,3 @@ curl -X POST -H "Content-Type: application/json" -d '{"user_id": "__DEFAULT__", 
 for production
 pip install gunicorn
 gunicorn --bind 0.0.0.0:5002 server.rag_service.app:app
-

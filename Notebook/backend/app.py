@@ -3,26 +3,26 @@
 import os
 import logging
 import json
-import uuid
+import uuid 
 from flask import Flask, request, jsonify, render_template, send_from_directory, Response
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from waitress import serve
-from datetime import datetime, timezone # Correct import
+from datetime import datetime, timezone
+import threading # Import threading
 
-# --- Initialize Logging and Configuration First ---
+# Initialize Logging and Configuration
 import config
-config.setup_logging() # Configure logging based on config
-logger = logging.getLogger(__name__) # Get logger for this module
+config.setup_logging()
+logger = logging.getLogger(__name__)
 
-# --- Import Core Modules ---
+# Import Core Modules
 import database
-import ai_core
+import ai_core # Your AI logic module
 import utils
 
-# --- Global Flask App Setup ---
+# ... (rest of your Flask app setup: template_folder, static_folder, CORS, UPLOAD_FOLDER config) ...
 backend_dir = os.path.dirname(__file__)
-# Ensure paths to templates and static are absolute or correctly relative
 template_folder = os.path.join(backend_dir, 'templates')
 static_folder = os.path.join(backend_dir, 'static')
 
@@ -31,785 +31,589 @@ if not os.path.exists(static_folder): logger.error(f"Static folder not found: {s
 
 app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
 
-# --- Configure CORS ---
-# Allowing all origins for campus IP access as requested. REMEMBER THE SECURITY IMPLICATIONS.
 CORS(app, resources={r"/*": {"origins": "*"}})
-logger.info("CORS configured to allow all origins ('*'). This is suitable for development/campus LAN but insecure for public deployment.")
+logger.info("CORS configured to allow all origins ('*').")
 
-# --- Configure Uploads ---
 app.config['UPLOAD_FOLDER'] = config.UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 64 * 1024 * 1024 # 64MB limit
-logger.info(f"Upload folder: {app.config['UPLOAD_FOLDER']}")
-logger.info(f"Max upload size: {app.config['MAX_CONTENT_LENGTH'] / (1024*1024)} MB")
+app.config['MAX_CONTENT_LENGTH'] = 64 * 1024 * 1024
 
-# Ensure upload directory exists
-try:
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    logger.info(f"Upload directory ensured: {app.config['UPLOAD_FOLDER']}")
-except OSError as e:
-    logger.error(f"Could not create upload directory {app.config['UPLOAD_FOLDER']}: {e}", exc_info=True)
-
-# Ensure KG directory exists
-KG_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'KG'))
-try:
-    os.makedirs(KG_FOLDER, exist_ok=True)
-    logger.info(f"KG directory ensured: {KG_FOLDER}")
-except OSError as e:
-    logger.error(f"Could not create KG directory {KG_FOLDER}: {e}", exc_info=True)
-
-# --- Application Initialization ---
-# Flags to track initialization status
+# ... (initialize_app function and other global app state variables are fine) ...
 app_db_ready = False
 app_ai_ready = False
 app_vector_store_ready = False
-app_doc_cache_loaded = False # Flag for document text cache
+app_doc_cache_loaded = False
 
 def initialize_app():
-    """Initializes database, AI components, loads index and document texts."""
     global app_db_ready, app_ai_ready, app_vector_store_ready, app_doc_cache_loaded
-    # Prevent re-initialization if called multiple times
     if hasattr(app, 'initialized') and app.initialized:
-        # logger.debug("Application already initialized.")
         return
 
     logger.info("--- Starting Application Initialization ---")
-    initialization_successful = True
-
-    # 1. Initialize Database
+    # ... (your existing initialization logic for DB, AI, Vector Store, Doc Cache) ...
     try:
-        database.init_db() # This now returns nothing, just logs errors/success
-        # Check connection after init attempt (optional, assumes init_db raises on critical failure)
-        # conn = database.get_db_connection()
-        # conn.close()
+        database.init_db()
         app_db_ready = True
         logger.info("Database initialization successful.")
     except Exception as e:
         logger.critical(f"Database initialization failed: {e}. Chat history will be unavailable.", exc_info=True)
         app_db_ready = False
-        initialization_successful = False # DB is critical
-
-    # 2. Initialize AI Components (Embeddings + LLM)
-    logger.info("Initializing AI components...")
+    
+    logger.info("Initializing AI components (LLM, Embeddings)...")
     embed_instance, llm_instance = ai_core.initialize_ai_components()
-    if not embed_instance or not llm_instance:
-         logger.warning("AI components (LLM/Embeddings) failed to initialize. Check Ollama connection and model names. Chat/Analysis/Upload features relying on AI will be unavailable.")
-         app_ai_ready = False
-         # Let initialization proceed, but AI features won't work
-         # initialization_successful = False # Only fail if AI is absolutely essential for startup
-    else:
-         app_ai_ready = True
-         # Set globals in ai_core if initialize_ai_components doesn't do it anymore
-         # ai_core.embeddings = embed_instance # Assuming initialize sets globals
-         # ai_core.llm = llm_instance
-         logger.info("AI components initialized successfully.")
-
-    # 3. Load FAISS Vector Store (requires embeddings)
-    if app_ai_ready:
+    if embed_instance and llm_instance:
+        app_ai_ready = True
+        logger.info("AI components initialized successfully.")
+        
         logger.info("Loading FAISS vector store...")
         if ai_core.load_vector_store():
             app_vector_store_ready = True
-            index_size = getattr(getattr(ai_core.vector_store, 'index', None), 'ntotal', 0)
-            logger.info(f"FAISS vector store loaded successfully (or is empty). Index size: {index_size}")
+            index_size = 0
+            if ai_core.vector_store and hasattr(ai_core.vector_store, 'index'):
+                 index_size = getattr(ai_core.vector_store.index, 'ntotal', 0)
+            logger.info(f"FAISS vector store status: Loaded. Index size: {index_size}")
         else:
             app_vector_store_ready = False
-            logger.warning("Failed to load existing FAISS vector store or it wasn't found. RAG will start with an empty index until uploads or default.py runs.")
-            # Not necessarily a failure for the app to start
+            logger.warning("Failed to load FAISS vector store. RAG might start with an empty/new index.")
     else:
-         app_vector_store_ready = False
-         logger.warning("Skipping vector store loading because AI components failed to initialize.")
+        app_ai_ready = False
+        app_vector_store_ready = False 
+        logger.warning(f"AI components failed to initialize. RAG, Analysis, and KG-enhanced chat will be affected.")
 
-    # 4. Load Document Texts into Cache (for analysis) - Best effort
     logger.info("Loading document texts into cache...")
     try:
-         ai_core.load_all_document_texts()
-         app_doc_cache_loaded = True
-         logger.info(f"Document text cache loading complete. Cached {len(ai_core.document_texts_cache)} documents.")
+        ai_core.load_all_document_texts() 
+        app_doc_cache_loaded = True
+        logger.info(f"Document text cache loaded. Cached {len(ai_core.document_texts_cache)} documents.")
     except Exception as e:
-         logger.error(f"Error loading document texts into cache: {e}. Analysis of uncached docs may require on-the-fly extraction.", exc_info=True)
-         app_doc_cache_loaded = False
-         # Not a critical failure
-
-    app.initialized = True # Set flag after first run
+        logger.error(f"Error loading document texts: {e}. Analysis may require on-the-fly extraction.", exc_info=True)
+        app_doc_cache_loaded = False
+        
+    app.initialized = True
     logger.info("--- Application Initialization Complete ---")
-    if not initialization_successful:
-         logger.critical("Initialization failed (Database Error). Application may not function correctly.")
-    elif not app_ai_ready:
-         logger.warning("Initialization complete, but AI components failed. Some features unavailable.")
 
 
-# Run initialization before the first request using Flask's mechanism
 @app.before_request
 def ensure_initialized():
-    # This ensures initialization runs once before the first request handles.
-    # The flag prevents it from running on every request.
     if not hasattr(app, 'initialized') or not app.initialized:
         initialize_app()
 
-
-# --- Flask Routes ---
-
-@app.route('/')
-def index():
-    """Serves the main HTML page."""
-    logger.debug("Serving index.html")
+# --- Function to run KG generation in a background thread ---
+def _trigger_kg_generation_background(filename_for_kg):
+    """
+    Wrapper to call ai_core.generate_knowledge_graph_from_pdf in a new thread.
+    This function will run in the background.
+    """
+    # It's important that functions running in new threads, especially if they use Flask's
+    # app context or request context, are handled carefully.
+    # For ai_core.generate_knowledge_graph_from_pdf, it primarily uses its own
+    # Ollama client and file operations, so it should be relatively safe.
+    # If it needed app context, you'd use `with app.app_context():` here.
+    logger.info(f"BACKGROUND_KG: Starting KG generation for '{filename_for_kg}' in a background thread.")
     try:
-        # Pass backend status flags to the template if needed for UI elements
-        # status = get_status().get_json() # Get current status
-        return render_template('index.html')#, backend_status=status)
-    except Exception as e:
-         logger.error(f"Error rendering index.html: {e}", exc_info=True)
-         return "Error loading application interface. Check server logs.", 500
+        # We need to ensure ai_core's global LLM/embeddings are available if KG gen relies on them
+        # In your current setup, KG generation uses its own _kg_ollama_client.
+        # If generate_knowledge_graph_from_pdf needed app_ai_ready components,
+        # you might need to pass them or re-initialize them carefully in a thread.
+        # However, your KG generation seems self-contained with _initialize_kg_ollama_client.
 
-# Serve KG visualization HTML page
-import os
-from flask import send_from_directory
-
-KG_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'KG'))
-
-@app.route('/kg-visualization')
-def kg_visualization():
-    """Serve the KG visualization HTML page."""
-    try:
-        return send_from_directory(KG_FOLDER, 'kg1.html')
-    except Exception as e:
-        logger.error(f"Error serving KG visualization page: {e}", exc_info=True)
-        return "Error loading KG visualization page.", 500
-
-@app.route('/kg-data')
-def kg_data():
-    """Serve the KG JSON graph data."""
-    try:
-        return send_from_directory(KG_FOLDER, 'kg1.json')
-    except Exception as e:
-        logger.error(f"Error serving KG JSON data: {e}", exc_info=True)
-        return "Error loading KG JSON data.", 500
-
-@app.route('/generate-kg', methods=['POST'])
-def generate_knowledge_graph():
-    """Generate a knowledge graph from the provided document."""
-    try:
-        if not request.json or 'document_id' not in request.json:
-            return jsonify({"error": "No document ID provided"}), 400
-
-        document_id = request.json['document_id']
+        # Check if AI components required for KG generation are ready (e.g., KG_MODEL via _kg_ollama_client)
+        # The _initialize_kg_ollama_client in ai_core.py handles its own readiness.
         
-        # Get document text from cache or load it
-        if document_id in ai_core.document_texts_cache:
-            document_text = ai_core.document_texts_cache[document_id]
+        result = ai_core.generate_knowledge_graph_from_pdf(filename_for_kg)
+        if result:
+            logger.info(f"BACKGROUND_KG: Successfully completed KG generation for '{filename_for_kg}'.")
         else:
-            # Try to load the document text
-            try:
-                document_text = ai_core.load_document_text(document_id)
-            except Exception as e:
-                logger.error(f"Error loading document text: {e}", exc_info=True)
-                return jsonify({"error": "Could not load document text"}), 500
-
-        # Split text into chunks
-        chunks = ai_core.split_into_chunks(document_text, chunk_size=2048, overlap=256)
-        
-        # Process chunks to generate knowledge graph
-        all_graphs = []
-        for i, chunk in enumerate(chunks):
-            logger.debug(f"Processing chunk {i+1}/{len(chunks)} for KG generation.")
-            try:
-                # Use the LLM to generate graph data for this chunk
-                response = ai_core.llm.invoke(
-                    model=config.OLLAMA_MODEL,
-                    messages=[{
-                        "role": "user",
-                        "content": f"""You are an expert in knowledge graph creation. Create a graph-based memory map from this text. 
-                        Identify major topics as top-level nodes, subtopics as subnodes, and relationships between nodes.
-                        Output as JSON with "nodes" and "edges" sections. Ensure the output is ONLY the JSON object, with no surrounding text or markdown.
-                        
-                        Text:
-                        {chunk}
-                        
-                        Output format:
-                        {{
-                            "nodes": [
-                                {{"id": "Node Name", "type": "major/subnode", "parent": "Parent Node (if subnode) or null", "description": "Short description (max 50 words)"}},
-                                ...
-                            ],
-                            "edges": [
-                                {{"from": "Node A", "to": "Node B", "relationship": "subtopic/depends_on/related_to"}},
-                                ...
-                            ]
-                        }}"""
-                    }],
-                    format="json",
-                    options={"num_ctx": 4096, "temperature": 0.3}
-                )
-                
-                # Parse and validate the response
-                content = response.get('message', {}).get('content', '')
-                logger.debug(f"Raw LLM response for chunk {i+1}: {content[:500]}...") # Log start of response
-
-                if not content:
-                    logger.warning(f"Empty response content received for chunk {i+1}.")
-                    continue
-
-                try:
-                    # Attempt to strip potential markdown code fences if present (added robustness)
-                    if content.strip().startswith("```json"):
-                        content = content.strip()[7:-3].strip()
-                    elif content.strip().startswith("```"):
-                         content = content.strip()[3:-3].strip()
-
-                    graph_data = json.loads(content)
-                    logger.debug(f"Successfully parsed JSON for chunk {i+1}.")
-
-                    if isinstance(graph_data, dict) and 'nodes' in graph_data and 'edges' in graph_data and isinstance(graph_data['nodes'], list) and isinstance(graph_data['edges'], list):
-                        all_graphs.append(graph_data)
-                        logger.debug(f"Chunk {i+1} produced a valid graph structure.")
-                    else:
-                        logger.warning(f"Invalid graph structure or types received for chunk {i+1}. Data keys: {graph_data.keys() if isinstance(graph_data, dict) else 'Not a dict'}.") # Log keys if dict
-                        # Optionally log the problematic content for debugging
-                        # logger.debug(f"Problematic content for chunk {i+1}: {content}")
-
-                except json.JSONDecodeError as e:
-                    logger.error(f"JSON parsing error for chunk {i+1}: {e}")
-                    logger.debug(f"Content that caused parsing error for chunk {i+1}: {content}") # Log problematic content
-                    continue # Skip this chunk if JSON is invalid
-            
-            except Exception as e:
-                logger.error(f"Error processing chunk {i+1}: {e}", exc_info=True)
-                continue # Skip this chunk on any error
-
-        logger.info(f"Finished processing chunks. Successfully generated valid graphs for {len(all_graphs)} chunks.")
-
-        # Merge all graphs
-        if all_graphs:
-            final_graph = ai_core.merge_graphs(all_graphs)
-            
-            # Save the graph
-            kg_path = os.path.join(KG_FOLDER, 'kg1.json')
-            with open(kg_path, 'w') as f:
-                json.dump(final_graph, f, indent=2)
-            
-            return jsonify({
-                "status": "success",
-                "message": "Knowledge graph generated successfully",
-                "nodes_count": len(final_graph.get('nodes', [])),
-                "edges_count": len(final_graph.get('edges', []))
-            })
-        else:
-            return jsonify({"error": "No valid graphs were generated"}), 500
-
+            logger.error(f"BACKGROUND_KG: KG generation for '{filename_for_kg}' failed or returned no data.")
     except Exception as e:
-        logger.error(f"Error generating knowledge graph: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
-
-# Static files (CSS, JS) are handled automatically by Flask if static_folder is set correctly
-
-@app.route('/favicon.ico')
-def favicon():
-    """Handles browser requests for favicon.ico to avoid 404s."""
-    # If you have a favicon.ico in your static folder:
-    # return send_from_directory(app.static_folder, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
-    # If not, return 204 No Content:
-    # logger.debug("Favicon request received, returning 204.")
-    return Response(status=204)
-
-@app.route('/status', methods=['GET'])
-def get_status():
-     """Endpoint to check backend status and component readiness."""
-     # logger.debug("Status endpoint requested.") # Can be noisy
-     vector_store_count = -1 # Indicate not checked or error initially
-     if app_ai_ready and app_vector_store_ready: # Only check count if store should be ready
-        if ai_core.vector_store and hasattr(ai_core.vector_store, 'index') and ai_core.vector_store.index:
-            try:
-                vector_store_count = ai_core.vector_store.index.ntotal
-            except Exception as e:
-                logger.warning(f"Could not get vector store count: {e}")
-                vector_store_count = -2 # Indicate error getting count
-        else:
-             vector_store_count = 0 # Store loaded but might be empty
-
-     status_data = {
-         "status": "ok" if app_db_ready else "error", # Base status depends on DB
-         "database_initialized": app_db_ready,
-         "ai_components_loaded": app_ai_ready,
-         "vector_store_loaded": app_vector_store_ready,
-         "vector_store_entries": vector_store_count, # -1:NotChecked/AI down, -2:Error, 0+:Count
-         "doc_cache_loaded": app_doc_cache_loaded,
-         "cached_docs_count": len(ai_core.document_texts_cache) if app_doc_cache_loaded else 0,
-         "ollama_model": config.OLLAMA_MODEL,
-         "embedding_model": config.OLLAMA_EMBED_MODEL,
-         "timestamp": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z') # Standard ISO UTC
-     }
-     # logger.debug(f"Returning status: {status_data}")
-     return jsonify(status_data)
-
-
-@app.route('/documents', methods=['GET'])
-def get_documents():
-    """Returns sorted lists of default and uploaded PDF filenames."""
-    # logger.debug("Documents list endpoint requested.")
-    default_files = []
-    uploaded_files = []
-    error_messages = []
-
-    def _list_pdfs(folder_path, folder_name_for_error):
-        files = []
-        if not os.path.exists(folder_path):
-            logger.warning(f"Document folder not found: {folder_path}")
-            error_messages.append(f"Folder not found: {folder_name_for_error}")
-            return files
-        try:
-            # List, filter for PDFs, ensure they are files, sort
-            files = sorted([
-                f for f in os.listdir(folder_path)
-                if os.path.isfile(os.path.join(folder_path, f)) and
-                   f.lower().endswith('.pdf') and
-                   not f.startswith('~') # Ignore temp files
-            ])
-        except OSError as e:
-            logger.error(f"Error listing files in {folder_path}: {e}", exc_info=True)
-            error_messages.append(f"Could not read folder: {folder_name_for_error}")
-        return files
-
-    default_files = _list_pdfs(config.DEFAULT_PDFS_FOLDER, "Default PDFs")
-    uploaded_files = _list_pdfs(config.UPLOAD_FOLDER, "Uploaded PDFs")
-
-    # Combine and deduplicate for the dropdown if needed, or return separately
-    # For separate lists as requested:
-    response_data = {
-        "default_files": default_files,
-        "uploaded_files": uploaded_files,
-        "errors": error_messages if error_messages else None
-    }
-    logger.debug(f"Returning document lists: {len(default_files)} default, {len(uploaded_files)} uploaded.")
-    return jsonify(response_data)
+        logger.error(f"BACKGROUND_KG: Error during background KG generation for '{filename_for_kg}': {e}", exc_info=True)
+# --- End background KG function ---
 
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
-    """Handles PDF uploads, processing, caching, and adding to FAISS."""
-    logger.info("File upload request received.")
+    # ... (your existing checks for AI readiness, file part, filename, allowed_file) ...
+    if not app_ai_read y:
+        logger.error("Upload failed: Core AI components (LLM/Embeddings) not initialized.")
+        return jsonify({"error": "Cannot process upload: AI components not ready."}), 503
+    if not ai_core.embeddings: # Assuming ai_core.embeddings is the embedding model instance
+        logger.error("Upload failed: Embeddings model not initialized.")
+        return jsonify({"error": "Cannot process upload: Embeddings model not ready."}), 503
 
-    # --- Check AI readiness (needed for embedding) ---
-    if not app_ai_ready or not ai_core.embeddings:
-         logger.error("Upload failed: AI Embeddings component not initialized.")
-         # 503 Service Unavailable is appropriate
-         return jsonify({"error": "Cannot process upload: AI processing components are not ready. Check server status."}), 503
-
-    # --- File Handling ---
     if 'file' not in request.files:
-        logger.warning("Upload request missing 'file' part.")
         return jsonify({"error": "No file part in the request"}), 400
-
     file = request.files['file']
-    if not file or not file.filename: # Check if filename is empty string
-        logger.warning("Upload request received with no selected file name.")
-        return jsonify({"error": "No file selected"}), 400
+    if not file or not file.filename: # Check for file and filename presence
+        return jsonify({"error": "No file selected or filename missing"}), 400
+    
+    original_secure_filename = secure_filename(file.filename)
 
-    if not utils.allowed_file(file.filename):
-         logger.warning(f"Upload attempt with disallowed file type: {file.filename}")
-         return jsonify({"error": "Invalid file type. Only PDF files (.pdf) are allowed."}), 400
+    # Handle cases where secure_filename might return an empty string (e.g., filename was ".." or similar)
+    if not original_secure_filename:
+        file_ext_parts = file.filename.rsplit('.', 1)
+        file_ext = file_ext_parts[1].lower() if len(file_ext_parts) > 1 else ""
+        
+        # Ensure the extension is valid, or use a default if config is available
+        allowed_exts_no_dot = getattr(config, 'ALLOWED_EXTENSIONS_WITHOUT_DOT', ['pdf', 'txt', 'md'])
+        if file_ext not in allowed_exts_no_dot:
+            file_ext = "dat" # Fallback extension
+        
+        original_secure_filename = f"upload_{uuid.uuid4().hex}.{file_ext}"
+        logger.warning(f"Original filename was insecure or empty. Generated new filename: {original_secure_filename}")
 
-    # Sanitize filename
-    filename = secure_filename(file.filename)
-    if not filename: # secure_filename might return empty if input is weird
-         logger.warning(f"Could not secure filename from: {file.filename}. Using generic name.")
-         filename = f"upload_{uuid.uuid4()}.pdf" # Fallback name
+    if not utils.allowed_file(original_secure_filename): # Ensure utils.allowed_file exists and uses config.ALLOWED_EXTENSIONS
+        allowed_exts_str = ', '.join(getattr(config, 'ALLOWED_EXTENSIONS', ['.pdf', '.txt']))
+        return jsonify({"error": f"Invalid file type. Only {allowed_exts_str} files are allowed."}), 400
 
+    # This will be the filename used for processing and storage.
+    # It may be changed if there's a collision with a default PDF.
+    filename_for_processing = original_secure_filename
+    
+    # Check for name collision with files in DEFAULT_PDFS_FOLDER
+    if hasattr(config, 'DEFAULT_PDFS_FOLDER') and config.DEFAULT_PDFS_FOLDER:
+        default_pdf_path_if_exists = os.path.join(config.DEFAULT_PDFS_FOLDER, original_secure_filename)
+        if os.path.exists(default_pdf_path_if_exists):
+            name_part, ext_part = os.path.splitext(original_secure_filename)
+            unique_suffix = uuid.uuid4().hex[:8] # Use a short UUID to make it unique
+            filename_for_processing = f"{name_part}_{unique_suffix}{ext_part}"
+            logger.info(
+                f"Uploaded file '{original_secure_filename}' has a name conflict with a file in DEFAULT_PDFS_FOLDER. "
+                f"It will be processed as '{filename_for_processing}' to ensure the uploaded version from UPLOAD_FOLDER is used."
+            )
+    else:
+        logger.debug("config.DEFAULT_PDFS_FOLDER not defined or empty. Skipping collision check with default PDFs.")
 
-    # Prevent overwriting existing files? Or allow? Allow for simplicity, user manages uploads.
-    # Consider adding a check if filename exists and maybe renaming or rejecting?
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    logger.debug(f"Attempting to save uploaded file to: {filepath}")
+    # Use filename_for_processing (which might be same as original_secure_filename or a new unique one)
+    final_filename = filename_for_processing
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], final_filename)
 
-    # --- Save and Process ---
     try:
-        # Ensure upload dir exists (double check)
         os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
         file.save(filepath)
-        logger.info(f"File '{filename}' saved successfully to {filepath}")
+        logger.info(f"File '{final_filename}' saved to {filepath}")
 
-        # 1. Extract text
-        logger.info(f"Processing uploaded file: {filename}...")
-        text = ai_core.extract_text_from_pdf(filepath)
+        text = ai_core.extract_text_from_file(filepath)
         if not text:
-            # Extraction failed, remove the saved file
+            logger.error(f"Could not extract text from '{final_filename}'.")
+            # Attempt to remove the problematic file to avoid clutter
             try:
-                os.remove(filepath)
-                logger.info(f"Removed file {filepath} because text extraction failed.")
-            except OSError as rm_err:
-                logger.error(f"Error removing problematic file {filepath} after failed text extraction: {rm_err}")
-            logger.error(f"Could not extract text from uploaded file: {filename}. It might be empty, corrupted, or password-protected.")
-            # Return 400 Bad Request as the file is unusable
-            return jsonify({"error": f"Could not read text from '{filename}'. Please check if the PDF is valid and not password-protected."}), 400
+                if os.path.exists(filepath): os.remove(filepath)
+                logger.info(f"Removed '{filepath}' due to text extraction failure.")
+            except OSError as e_rm:
+                logger.error(f"Error removing '{filepath}' after text extraction failure: {e_rm}")
+            return jsonify({"error": f"Could not read text from '{final_filename}'. Ensure it's a valid file."}), 400
 
-        # 2. Add extracted text to cache (overwrite if filename exists)
-        ai_core.document_texts_cache[filename] = text
-        logger.info(f"Text extracted ({len(text)} chars) and cached for {filename}.")
+        ai_core.document_texts_cache[final_filename] = text
+        logger.info(f"Text extracted and cached for {final_filename}.")
 
-        # 3. Create chunks/documents
-        logger.debug(f"Creating document chunks for {filename}...")
-        documents = ai_core.create_chunks_from_text(text, filename)
-        if not documents:
-             # Text extracted but chunking failed. Keep file & cache, but RAG won't work.
-             logger.error(f"Could not create document chunks for {filename}, although text was extracted. File kept and cached, but cannot add to knowledge base for chat.")
-             # Return 500 Internal Server Error as processing failed partially
-             return jsonify({"error": f"Could not process the structure of '{filename}' into searchable chunks. Analysis might work, but chat context cannot be added for this file."}), 500
+        documents_for_rag = ai_core.create_chunks_from_text(text, final_filename)
+        if not documents_for_rag:
+            logger.error(f"Could not create chunks for '{final_filename}'.")
+            return jsonify({"error": f"Could not process '{final_filename}' into searchable chunks."}), 500
 
-        # 4. Add to vector store (this handles index creation/saving internally)
-        logger.debug(f"Adding {len(documents)} chunks for {filename} to vector store...")
-        if not ai_core.add_documents_to_vector_store(documents):
-            logger.error(f"Failed to add document chunks for '{filename}' to the vector store or save the index. Check logs.")
-            # Keep file/cache, but report index failure.
-            return jsonify({"error": f"File '{filename}' processed, but failed to update the knowledge base index. Consult server logs."}), 500
-
-        # --- Success ---
+        if not ai_core.add_documents_to_vector_store(documents_for_rag):
+            logger.error(f"Failed to add '{final_filename}' to vector store.")
+            return jsonify({"error": f"File '{final_filename}' processed but failed to update knowledge base."}), 500
+        
         vector_count = -1
         if ai_core.vector_store and hasattr(ai_core.vector_store, 'index'):
-             vector_count = getattr(ai_core.vector_store.index, 'ntotal', 0)
-        logger.info(f"Successfully processed, cached, and indexed '{filename}'. New vector count: {vector_count}")
-        # Return success message, filename, and maybe new count
-        return jsonify({
-            "message": f"File '{filename}' uploaded and added to knowledge base successfully.",
-            "filename": filename,
+            vector_count = getattr(ai_core.vector_store.index, 'ntotal', 0)
+        logger.info(f"Successfully processed '{final_filename}' for RAG. Vector count: {vector_count}")
+
+        # --- AUTOMATIC KG GENERATION TRIGGER ---
+        logger.info(f"UPLOAD_SUCCESS: '{final_filename}' processed for RAG. Attempting to trigger background KG generation.")
+        # Start KG generation in a new thread so the upload request returns quickly.
+        # Pass the 'final_filename' (which is unique if collision occurred)
+        kg_thread = threading.Thread(target=_trigger_kg_generation_background, args=(final_filename,))
+        kg_thread.daemon = True # Allows main program to exit even if threads are still running
+        kg_thread.start()
+        logger.info(f"UPLOAD_SUCCESS: Background KG generation thread started for '{final_filename}'.")
+        # --- END AUTOMATIC KG GENERATION TRIGGER ---
+
+        response_payload = {
+            "message": f"File '{original_secure_filename}' uploaded and processed for RAG (as '{final_filename}'). KG generation started in background.",
+            "filename": final_filename, # This is the name to use for future requests for this file
             "vector_count": vector_count
-        }), 200 # 200 OK for successful upload and processing
+        }
+        if final_filename != original_secure_filename:
+            response_payload["original_filename_on_upload"] = original_secure_filename
+            response_payload["note"] = "Filename was changed to avoid conflict with a default system file."
+
+
+        return jsonify(response_payload), 200 # Return 200 OK immediately
 
     except Exception as e:
-        logger.error(f"Unexpected error processing upload for filename '{filename}': {e}", exc_info=True)
-        # Clean up potentially saved file if an error occurred mid-process
-        if 'filepath' in locals() and os.path.exists(filepath):
-             try:
-                 os.remove(filepath)
-                 logger.info(f"Cleaned up file {filepath} after upload processing error.")
-             except OSError as rm_err:
-                 logger.error(f"Error attempting to clean up file {filepath} after error: {rm_err}")
-        return jsonify({"error": f"An unexpected server error occurred while processing the file: {type(e).__name__}. Please check server logs."}), 500
+        # Use final_filename if defined, otherwise original_secure_filename for logging
+        current_fn_for_log = final_filename if 'final_filename' in locals() else original_secure_filename
+        logger.error(f"Error processing upload '{current_fn_for_log}': {e}", exc_info=True)
+        return jsonify({"error": f"An unexpected error occurred during upload: {type(e).__name__}."}), 500
 
+@app.route('/')
+def index():
+    logger.debug("Serving index.html")
+    return render_template('index.html')
+
+@app.route('/favicon.ico')
+def favicon():
+    return Response(status=204) # Using 204 No Content is a common way to handle favicon if you don't have one
+
+@app.route('/status', methods=['GET'])
+def get_status():
+    vector_store_count = -1
+    if app_ai_ready and app_vector_store_ready and ai_core.vector_store and hasattr(ai_core.vector_store, 'index'):
+        try:
+            vector_store_count = ai_core.vector_store.index.ntotal
+        except AttributeError: 
+            vector_store_count = 0 
+        except Exception:
+             vector_store_count = -2 # Indicates an error trying to get the count
+    elif app_vector_store_ready and not ai_core.vector_store: # Store was supposed to be ready but instance is None
+        vector_store_count = 0
+
+    status_data = {
+        "status": "ok" if app_db_ready and app_ai_ready else "degraded",
+        "database_initialized": app_db_ready,
+        "ai_components_loaded": app_ai_ready,
+        "vector_store_loaded": app_vector_store_ready,
+        "vector_store_entries": vector_store_count,
+        "doc_cache_loaded": app_doc_cache_loaded,
+        "cached_docs_count": len(ai_core.document_texts_cache) if app_doc_cache_loaded and ai_core.document_texts_cache is not None else 0,
+        "ollama_model": getattr(config, 'OLLAMA_MODEL', 'N/A'),
+        "embedding_model": getattr(config, 'OLLAMA_EMBED_MODEL', 'N/A'),
+        "timestamp": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
+    }
+    return jsonify(status_data)
+
+@app.route('/documents', methods=['GET'])
+def get_documents():
+    default_files = []
+    uploaded_files = []
+    error_messages = []
+
+    def _list_files(folder_path, folder_name_log):
+        files_list = []
+        if not folder_path or not os.path.exists(folder_path): # Added check for folder_path itself
+            msg = f"Folder not found or not configured: {folder_path} (for {folder_name_log})"
+            error_messages.append(msg)
+            logger.warning(msg)
+            return files_list
+        try:
+            files_list = sorted([
+                f for f in os.listdir(folder_path)
+                if os.path.isfile(os.path.join(folder_path, f)) and
+                utils.allowed_file(f) and # Relies on utils.allowed_file and config.ALLOWED_EXTENSIONS
+                not f.startswith('~') # Ignore temporary files (e.g. Word temporary files)
+            ])
+        except OSError as e:
+            msg = f"Could not read folder {folder_path}: {e}"
+            error_messages.append(msg)
+            logger.error(msg, exc_info=True)
+        return files_list
+
+    # Get folder paths from config
+    default_pdfs_folder = getattr(config, 'DEFAULT_PDFS_FOLDER', None)
+    upload_folder = getattr(config, 'UPLOAD_FOLDER', None) # This is also app.config['UPLOAD_FOLDER']
+    kg_output_folder = getattr(config, 'KG_OUTPUT_FOLDER', None)
+    kg_filename_suffix = getattr(config, 'KG_FILENAME_SUFFIX', '.kg.json')
+
+    default_files = _list_files(default_pdfs_folder, "Default Files")
+    uploaded_files = _list_files(upload_folder, "Uploaded Files")
+    
+    available_kgs = []
+    if kg_output_folder and os.path.exists(kg_output_folder):
+        try:
+            available_kgs = sorted([
+                f for f in os.listdir(kg_output_folder)
+                if f.endswith(kg_filename_suffix) # Use configured suffix
+            ])
+        except OSError as e:
+            msg = f"Could not read KG folder {kg_output_folder}: {e}"
+            error_messages.append(msg)
+            logger.error(msg, exc_info=True)
+    elif not kg_output_folder:
+        logger.debug("KG_OUTPUT_FOLDER not configured, so not listing available KGs.")
+
+    response_data = {
+        "default_files": default_files,
+        "uploaded_files": uploaded_files,
+        "available_kgs": available_kgs, 
+        "errors": error_messages if error_messages else None
+    }
+    logger.debug(f"Returning document lists: {len(default_files)} default, {len(uploaded_files)} uploaded, {len(available_kgs)} KGs.")
+    return jsonify(response_data)
+
+@app.route('/generate_kg', methods=['POST'])
+def generate_knowledge_graph_route(): 
+    data = request.get_json()
+    if not data:
+        logger.warning("KG request missing JSON body.")
+        return jsonify({"error": "Invalid request: JSON body required."}), 400
+
+    filename = data.get('filename')
+    if not filename or not isinstance(filename, str) or \
+       '/' in filename or '\\' in filename or filename.startswith('.'): # Basic security for filename
+        logger.warning(f"Invalid filename for KG: {filename}")
+        return jsonify({"error": "Missing or invalid 'filename'. Must be a simple filename."}), 400
+
+    logger.info(f"Received MANUAL request to generate knowledge graph for '{filename}'")
+    try:
+        # ai_core.generate_knowledge_graph_from_pdf is expected to find 'filename'
+        # in one of the configured locations (e.g., UPLOAD_FOLDER or DEFAULT_PDFS_FOLDER)
+        # If 'filename' was a result of renaming in upload_file, the client must provide that renamed name.
+        kg_result_data = ai_core.generate_knowledge_graph_from_pdf(filename) 
+        
+        if not kg_result_data: 
+            logger.error(f"MANUAL KG generation failed for '{filename}' (returned None).")
+            return jsonify({"error": f"Failed to generate knowledge graph for '{filename}'. Check server logs."}), 500
+
+        # Assuming ai_core.get_kg_filepath constructs the path to the saved KG file
+        kg_output_file = ai_core.get_kg_filepath(filename) 
+
+        nodes_count = len(kg_result_data.get('nodes',[])) if isinstance(kg_result_data, dict) else 0
+        edges_count = len(kg_result_data.get('edges',[])) if isinstance(kg_result_data, dict) else 0
+        
+        logger.info(f"MANUAL KG generated for '{filename}': {nodes_count} nodes, {edges_count} edges.")
+        return jsonify({
+            "message": f"Knowledge graph generation MANUALLY initiated and likely completed for '{filename}'.",
+            "nodes_count": nodes_count,
+            "edges_count": edges_count,
+            "output_file": kg_output_file 
+        }), 200
+    except Exception as e: 
+        logger.error(f"Unexpected error during MANUAL KG generation for '{filename}': {e}", exc_info=True)
+        return jsonify({"error": f"An unexpected server error occurred: {type(e).__name__}."}), 500
 
 @app.route('/analyze', methods=['POST'])
 def analyze_document():
-    """Generates analysis (FAQ, Topics, Mindmap) for a selected document."""
-    # --- Check AI readiness ---
-    if not app_ai_ready or not ai_core.llm:
-         logger.error("Analysis request failed: LLM component not initialized.")
-         return jsonify({"error": "Analysis unavailable: AI model is not ready.", "thinking": None}), 503
-
-    # --- Request Parsing ---
+    if not app_ai_ready or not ai_core.llm: 
+        logger.error("Analysis failed: LLM not initialized.")
+        return jsonify({"error": "Analysis unavailable: AI model not ready.", "thinking": None}), 503
     data = request.get_json()
-    if not data:
-        logger.warning("Analysis request received without JSON body.")
+    if not data: 
+        logger.warning("Analysis request missing JSON body.")
         return jsonify({"error": "Invalid request: JSON body required.", "thinking": None}), 400
-
     filename = data.get('filename')
     analysis_type = data.get('analysis_type')
-    logger.info(f"Analysis request received: type='{analysis_type}', file='{filename}'")
+    logger.info(f"Analysis request: type='{analysis_type}', file='{filename}'")
 
-    # Validate filename (basic check)
-    if not filename or not isinstance(filename, str) or not filename.strip() or '/' in filename or '\\' in filename:
-        logger.warning(f"Invalid filename received for analysis: {filename}")
+    if not filename or not isinstance(filename, str) or '/' in filename or '\\' in filename:
+        logger.warning(f"Invalid filename for analysis: {filename}")
         return jsonify({"error": "Missing or invalid 'filename'.", "thinking": None}), 400
-    # Use the sanitized/validated filename
-    # No need to call secure_filename here, assume it came from the /documents list
-    filename = filename.strip()
+    
+    analysis_prompts_config = getattr(config, 'ANALYSIS_PROMPTS', {})
+    if not isinstance(analysis_prompts_config, dict) or not analysis_prompts_config:
+        logger.error("config.ANALYSIS_PROMPTS is not defined, not a dict, or empty. Analysis types unknown.")
+        return jsonify({"error": "Server configuration error for analysis types.", "thinking": None}), 500
+    allowed_types = list(analysis_prompts_config.keys())
 
-    allowed_types = list(config.ANALYSIS_PROMPTS.keys()) # Get allowed types from config
     if not analysis_type or analysis_type not in allowed_types:
-        logger.warning(f"Invalid analysis_type received: {analysis_type}")
+        logger.warning(f"Invalid analysis_type: {analysis_type}")
         return jsonify({"error": f"Invalid 'analysis_type'. Must be one of: {', '.join(allowed_types)}", "thinking": None}), 400
-
-    # --- Perform Analysis using ai_core function ---
+    
     try:
-        # ai_core.generate_document_analysis handles text retrieval (cache/disk) and LLM call
-        # It now returns (analysis_content, thinking_content) or (error_message, thinking_content/None)
+        # ai_core.generate_document_analysis is expected to find 'filename'
+        # (e.g., using its text from document_texts_cache, which would use the final_filename if renamed on upload)
         analysis_content, thinking_content = ai_core.generate_document_analysis(filename, analysis_type)
-
-        # Check the result from ai_core
-        if analysis_content is None:
-             # This implies a failure to get the document text (e.g., file not found)
-             # generate_document_analysis should have logged the specific error
-             # Return a 404 Not Found if the error message indicates that
-             error_msg = f"Analysis failed: Could not retrieve or process document '{filename}'."
-             status_code = 404 # Assume file not found or unreadable if content is None
-             logger.error(error_msg)
-             return jsonify({"error": error_msg, "thinking": thinking_content}), status_code
-
-        elif analysis_content.startswith("Error:"):
-            # The analysis function itself indicated an error (e.g., LLM failure, bad prompt)
-            error_message = analysis_content # Use the error message returned
-            status_code = 500 # Assume internal server error unless message suggests otherwise (e.g., 404)
-            if "not found" in error_message.lower():
-                 status_code = 404
-            elif "AI model failed" in error_message or "AI model is not available" in error_message:
-                 status_code = 503 # Service unavailable
-
-            logger.error(f"Analysis failed for '{filename}' ({analysis_type}): {error_message}")
-            # Return thinking content even if analysis failed, if it was generated
-            return jsonify({"error": error_message, "thinking": thinking_content}), status_code
-        else:
-            # Success - we have valid analysis content
-            logger.info(f"Analysis successful for '{filename}' ({analysis_type}). Content length: {len(analysis_content)}")
-            # Return both content and thinking
-            return jsonify({
-                "content": analysis_content,
-                "thinking": thinking_content # Include thinking content in success response
-            })
-
+        
+        if analysis_content is None: 
+            logger.error(f"Analysis failed: Could not retrieve or process '{filename}'.")
+            return jsonify({"error": f"Could not retrieve or process '{filename}'.", "thinking": thinking_content or "File or text not found."}), 404
+        elif isinstance(analysis_content, str) and analysis_content.startswith("Error:"): 
+            logger.error(f"Analysis failed for '{filename}' ({analysis_type}): {analysis_content}")
+            status_code = 503 if "AI model" in analysis_content else 500
+            return jsonify({"error": analysis_content, "thinking": thinking_content}), status_code
+            
+        logger.info(f"Analysis successful for '{filename}' ({analysis_type}).")
+        return jsonify({"content": analysis_content, "thinking": thinking_content})
     except Exception as e:
-        # Catch unexpected errors in the route handler itself
-        logger.error(f"Unexpected error in /analyze route for '{filename}' ({analysis_type}): {e}", exc_info=True)
-        return jsonify({"error": f"Unexpected server error during analysis: {type(e).__name__}. Check logs.", "thinking": None}), 500
+        logger.error(f"Unexpected error in analysis for '{filename}' ({analysis_type}): {e}", exc_info=True)
+        return jsonify({"error": f"An unexpected server error occurred: {type(e).__name__}.", "thinking": None}), 500
 
 
 @app.route('/chat', methods=['POST'])
 def chat():
-    """Handles chat interactions: RAG search, LLM synthesis, history saving."""
-    # logger.debug("Chat request received.") # Can be noisy
-
-    # --- Check prerequisites ---
     if not app_db_ready:
-        logger.error("Chat request failed: Database not initialized.")
-        return jsonify({
-            "error": "Chat unavailable: Database connection failed.",
-            "answer": "Cannot process chat, the database is currently unavailable. Please try again later or contact support.",
-            "thinking": None, "references": [], "session_id": None
-        }), 503 # Service Unavailable
-
-    if not app_ai_ready or not ai_core.llm or not ai_core.embeddings:
-        logger.error("Chat request failed: AI components not initialized.")
-        return jsonify({
-            "error": "Chat unavailable: AI components not ready.",
-            "answer": "Cannot process chat, the AI components are not ready. Please ensure Ollama is running and models are available.",
-            "thinking": None, "references": [], "session_id": None
-        }), 503 # Service Unavailable
-
-    if not app_vector_store_ready and config.RAG_CHUNK_K > 0: # Only warn if RAG is expected/configured
-        logger.warning("Chat request proceeding, but vector store is not loaded/ready. RAG context will be empty or unavailable.")
-        # Allow chat to proceed using only LLM's general knowledge if RAG fails/is skipped
-
-    # --- Request Parsing ---
+        logger.error("Chat failed: Database not initialized.")
+        return jsonify({"error": "Chat unavailable: Database connection failed.", "answer": "Database unavailable.", "thinking": None, "references": [], "session_id": None}), 503
+    if not app_ai_ready or not ai_core.llm or not ai_core.embeddings: 
+        logger.error("Chat failed: Core AI components not initialized.")
+        return jsonify({"error": "Chat unavailable: AI components not ready.", "answer": "AI components not ready.", "thinking": None, "references": [], "session_id": None}), 503
+    
     data = request.get_json()
     if not data:
-        logger.warning("Chat request received without JSON body.")
         return jsonify({"error": "Invalid request: JSON body required."}), 400
+    
+    query = data.get('query', "").strip()
+    session_id = data.get('session_id')
 
-    query = data.get('query')
-    session_id = data.get('session_id') # Get session ID from request
-
-    if not query or not isinstance(query, str) or not query.strip():
-        logger.warning("Chat request received with empty or invalid query.")
+    if not query:
         return jsonify({"error": "Query cannot be empty"}), 400
-    query = query.strip()
 
-    # --- Session Management ---
     is_new_session = False
     if session_id:
         try:
-            # Validate UUID format
-            uuid.UUID(session_id, version=4)
-        except (ValueError, TypeError, AttributeError):
-            logger.warning(f"Received invalid session_id format: '{session_id}'. Generating a new session ID.")
-            session_id = str(uuid.uuid4()) # Generate new valid ID
+            uuid.UUID(session_id, version=4) 
+        except (ValueError, TypeError):
+            logger.warning(f"Invalid session_id '{session_id}' received. Generating new one.")
+            session_id = str(uuid.uuid4())
             is_new_session = True
     else:
-        # No session ID provided, generate a new one
         session_id = str(uuid.uuid4())
         is_new_session = True
-        logger.info(f"New chat session started. ID: {session_id}")
+        
+    logger.info(f"Processing chat query (Session: {session_id}, New: {is_new_session}): '{query[:100]}...'")
 
-    # Log entry with session info
-    logger.info(f"Processing chat query (Session: {session_id}, New: {is_new_session}): '{query[:150]}...'")
-
-    # --- Log User Message ---
-    user_message_id = None
-    try:
-        # Pass None for references and thinking for user messages
-        user_message_id = database.save_message(session_id, 'user', query, None, None)
-        if not user_message_id:
-             # Log error but proceed with generating response if possible
-             logger.error(f"Failed to save user message to database for session {session_id}. Continuing with response generation.")
-    except Exception as db_err:
-         # If saving user message fails critically, maybe return error? Or proceed?
-         # Proceeding might lead to incomplete history. Let's log and proceed.
-         logger.error(f"Database error occurred while saving user message for session {session_id}: {db_err}", exc_info=True)
-         # Optionally return 500 here if saving user message is critical
-         # return jsonify({"error": "Database error saving your message.", "answer": "Failed to record your message due to a database issue.", "thinking": None, "references": [], "session_id": session_id}), 500
-
-
-    # --- RAG + Synthesis Pipeline ---
-    bot_answer = "Sorry, I encountered an issue processing your request." # Default error response
-    references = []
-    thinking_content = None # Initialize thinking content
-
-    try:
-        # 1. Perform RAG Search (if vector store ready and RAG enabled)
-        context_text = "No specific document context was retrieved or used for this response." # Default if RAG skipped/failed
-        context_docs_map = {} # Map for citation details {1: {'source':.., 'chunk_index':.., 'content':...}}
-        if app_vector_store_ready and config.RAG_CHUNK_K > 0:
-            logger.debug(f"Performing RAG search (session: {session_id})...")
-            # ai_core.perform_rag_search returns: context_docs, formatted_context_text, context_docs_map
-            context_docs, context_text, context_docs_map = ai_core.perform_rag_search(query)
-            if context_docs:
-                 logger.info(f"RAG search completed. Found {len(context_docs)} unique context chunks for session {session_id}.")
-            else:
-                 logger.info(f"RAG search completed but found no relevant chunks for session {session_id}.")
-                 context_text = "No relevant document sections found for your query." # More specific message
-        elif not app_vector_store_ready and config.RAG_CHUNK_K > 0:
-             logger.warning(f"Skipping RAG search for session {session_id}: Vector store not ready.")
-             context_text = "Knowledge base access is currently unavailable; providing general answer."
-        else: # RAG_CHUNK_K <= 0
-             logger.debug(f"Skipping RAG search for session {session_id}: RAG is disabled (RAG_CHUNK_K <= 0).")
-             context_text = "Document search is disabled; providing general answer."
-
-
-        # 2. Synthesize Response using LLM (ai_core function now returns answer, thinking)
-        logger.debug(f"Synthesizing chat response (session: {session_id})...")
-        bot_answer, thinking_content = ai_core.synthesize_chat_response(query, context_text)
-        # Log if synthesis itself failed (returned error message)
-        if bot_answer.startswith("Error:") or "encountered an error" in bot_answer:
-             logger.error(f"LLM Synthesis failed for session {session_id}. Response: {bot_answer}")
-
-
-        # 3. Extract References (only if RAG provided context and answer is not an error message)
-        # Check if context_docs_map has items and bot_answer doesn't indicate a primary error
-        if context_docs_map and not (bot_answer.startswith("Error:") or "[AI Response Processing Error:" in bot_answer or "encountered an error" in bot_answer.lower()):
-            logger.debug(f"Extracting references from bot answer (session: {session_id})...")
-            references = utils.extract_references(bot_answer, context_docs_map)
-            if references:
-                logger.info(f"Extracted {len(references)} unique references for session {session_id}.")
-            # else: logger.debug("No citation markers found in the bot answer.")
-        else:
-             logger.debug(f"Skipping reference extraction for session {session_id}: No context map provided or bot answer indicates an error.")
-
-
-        # --- Log Bot Response (including thinking and references) ---
-        bot_message_id = None
-        try:
-            # Save the final answer, parsed references (JSON), and thinking content
-            bot_message_id = database.save_message(
-                session_id, 'bot', bot_answer, references, thinking_content # Pass thinking here
-            )
-            if not bot_message_id:
-                 logger.error(f"Failed to save bot response to database for session {session_id}.")
-        except Exception as db_err:
-             # Log error but don't fail the user request if only DB saving fails
-             logger.error(f"Database error occurred while saving bot response for session {session_id}: {db_err}", exc_info=True)
-
-
-        # --- Return Response Payload ---
-        response_payload = {
-            "answer": bot_answer,
-            "session_id": session_id, # Return the (potentially new) session ID
-            "references": references, # Return the structured list of references
-            "thinking": thinking_content # Include the thinking content
-        }
-        # logger.debug(f"Returning chat response payload for session {session_id}: {response_payload}")
-        return jsonify(response_payload), 200 # OK
-
+    try: 
+        database.save_message(session_id, 'user', query, None, None)
     except Exception as e:
-        # Catch unexpected errors during the RAG/Synthesis pipeline
-        logger.error(f"Unexpected error during chat processing pipeline for session {session_id}: {e}", exc_info=True)
-        # Construct a user-friendly error message
-        error_message = f"Sorry, an unexpected server error occurred ({type(e).__name__}). Please try again or contact support if the issue persists."
-        # Attempt to log this severe error to the chat history as well
-        try:
-            # Include error details in thinking for debugging via history
-            error_thinking = f"Unexpected error in /chat route: {type(e).__name__}: {str(e)}"
-            database.save_message(session_id, 'bot', error_message, None, error_thinking)
-        except Exception as db_log_err:
-            logger.error(f"Failed even to save the error message to DB for session {session_id}: {db_log_err}")
+        logger.error(f"Database error saving user message for session {session_id}: {e}", exc_info=True)
 
-        # Return a 500 Internal Server Error response
+    bot_answer_content = "Sorry, an issue occurred while processing your request."
+    thinking_content = "An error occurred before a thinking process could be fully logged."
+    references_list = []
+
+    try:
+        rag_context_docs, rag_context_text, rag_docs_map = [], "No document context retrieved.", {}
+        
+        rag_chunk_k = getattr(config, 'RAG_CHUNK_K', 0) # Default to 0 if not defined
+        rag_enabled = app_vector_store_ready and ai_core.vector_store and rag_chunk_k > 0
+        
+        if rag_enabled:
+            rag_context_docs, rag_context_text, rag_docs_map = ai_core.perform_rag_search(query)
+            logger.info(f"RAG search for session {session_id} yielded {len(rag_context_docs)} relevant chunks.")
+        elif rag_chunk_k <= 0:
+            rag_context_text = "Document search (RAG) is disabled by configuration (RAG_CHUNK_K)."
+            logger.info(f"RAG disabled by RAG_CHUNK_K for session {session_id}.")
+        else: 
+            rag_context_text = "Knowledge base (vector store) is currently unavailable; relying on general knowledge."
+            logger.warning(f"RAG search skipped for session {session_id}: Vector store not ready.")
+
+        bot_answer_content, thinking_content = ai_core.synthesize_chat_response(query, rag_context_text, rag_docs_map)
+
+        if isinstance(bot_answer_content, str) and bot_answer_content.startswith("Error:"):
+            logger.error(f"LLM synthesis failed for session {session_id}: {bot_answer_content}")
+        
+        if rag_docs_map and not (isinstance(bot_answer_content, str) and bot_answer_content.startswith("Error:")): 
+            references_list = utils.extract_references(bot_answer_content, rag_docs_map) 
+            logger.info(f"Extracted {len(references_list)} references for session {session_id}.")
+
+        try:
+            database.save_message(session_id, 'bot', bot_answer_content, json.dumps(references_list) if references_list else None, thinking_content)
+        except Exception as e:
+            logger.error(f"Database error saving bot response for session {session_id}: {e}", exc_info=True)
+
         return jsonify({
-            "error": "Unexpected server error.",
-            "answer": error_message,
-            "session_id": session_id, # Return session ID even on error
-            "thinking": f"Error in /chat: {type(e).__name__}", # Simplified error thinking
+            "answer": bot_answer_content,
+            "session_id": session_id,
+            "references": references_list,
+            "thinking": thinking_content
+        }), 200
+
+    except Exception as e: 
+        logger.error(f"Unexpected error in chat processing for session {session_id}: {e}", exc_info=True)
+        try:
+            error_msg_for_db = f"Sorry, an unexpected server error occurred: {type(e).__name__}."
+            if session_id: 
+                database.save_message(session_id, 'bot', error_msg_for_db, None, f"Internal Error: {str(e)}")
+        except Exception as db_err:
+            logger.error(f"Failed to save error message to DB for session {session_id} after chat error: {db_err}")
+        
+        return jsonify({
+            "error": "An unexpected server error occurred.",
+            "answer": "Sorry, I encountered an unexpected problem. Please try again.", 
+            "session_id": session_id or str(uuid.uuid4()), 
+            "thinking": f"Error: {type(e).__name__}", 
             "references": []
         }), 500
 
-
 @app.route('/history', methods=['GET'])
 def get_history():
-    """Retrieves chat history for a given session ID."""
-    session_id = request.args.get('session_id')
-    # logger.debug(f"History request for session: {session_id}")
-
-    # --- Prerequisite Checks ---
     if not app_db_ready:
-         logger.error("History request failed: Database not initialized.")
-         return jsonify({"error": "History unavailable: Database connection failed."}), 503
-
-    # --- Validate Input ---
+        logger.error("History retrieval failed: Database not initialized.")
+        return jsonify({"error": "History unavailable: Database connection failed."}), 503
+    
+    session_id = request.args.get('session_id')
     if not session_id:
         logger.warning("History request missing 'session_id' parameter.")
         return jsonify({"error": "Missing 'session_id' parameter"}), 400
-
-    try:
-        # Validate UUID format
-        uuid.UUID(session_id, version=4)
-    except (ValueError, TypeError, AttributeError):
-        logger.warning(f"History request with invalid session_id format: {session_id}")
+    
+    try: 
+        uuid.UUID(session_id, version=4) # Validate format
+    except (ValueError, TypeError):
+        logger.warning(f"Invalid session_id format for history: {session_id}")
         return jsonify({"error": "Invalid session_id format."}), 400
-
-    # --- Retrieve from DB ---
+        
     try:
-        # get_messages_by_session should now return the formatted list including 'thinking' and 'references'
-        messages = database.get_messages_by_session(session_id)
+        messages_from_db = database.get_messages_by_session(session_id) # Expect list of dict-like or Row objects
+        if messages_from_db is None: 
+            logger.error(f"History retrieval for session {session_id} failed at DB level (returned None).")
+            return jsonify({"error": "Could not retrieve history due to a database error."}), 500
+        
+        processed_messages = []
+        for msg_data in messages_from_db: 
+            # Ensure msg is a mutable dictionary for modification
+            msg = dict(msg_data) # Works if msg_data is a RowProxy, dict, or similar mapping
 
-        if messages is None:
-            # This indicates a database error occurred during retrieval (already logged by database module)
-            return jsonify({"error": "Could not retrieve history due to a database error. Check server logs."}), 500
-        else:
-            # Returns potentially empty list [] if session exists but has no messages, or if session doesn't exist.
-            logger.info(f"Retrieved {len(messages)} messages for session {session_id}.")
-            # Return the list of message dicts
-            return jsonify(messages) # Returns [] if no messages found, which is correct.
+            if msg.get('role') == 'bot':
+                references_json = msg.get('references')
+                if references_json and isinstance(references_json, str):
+                    try:
+                        msg['references'] = json.loads(references_json)
+                    except json.JSONDecodeError:
+                        logger.warning(f"Could not decode references JSON for message ID {msg.get('id')} in session {session_id}: '{str(references_json)[:100]}...'")
+                        msg['references'] = [] 
+                elif not references_json: 
+                     msg['references'] = []
+            processed_messages.append(msg)
 
-    except Exception as e:
-         # Catch unexpected errors in the route handler itself
-         logger.error(f"Unexpected error in /history route for session {session_id}: {e}", exc_info=True)
-         return jsonify({"error": f"Unexpected server error retrieving history: {type(e).__name__}. Check logs."}), 500
+        logger.info(f"Retrieved {len(processed_messages)} messages for session {session_id}.")
+        return jsonify(processed_messages)
+    except Exception as e: 
+        logger.error(f"Unexpected error retrieving history for session {session_id}: {e}", exc_info=True)
+        return jsonify({"error": f"An unexpected server error occurred: {type(e).__name__}."}), 500
 
-
-# --- Main Execution ---
 if __name__ == '__main__':
-    # Ensure initialization runs when script is executed directly
-    # (e.g., `python app.py`), not just before first request via WSGI
     if not hasattr(app, 'initialized') or not app.initialized:
-        initialize_app()
-
+        initialize_app() 
+    
     try:
-        # Read port from environment variable or default to 5000
-        port = int(os.getenv('FLASK_RUN_PORT', 5000))
-        if not (1024 <= port <= 65535):
-             logger.warning(f"Port {port} is outside the typical range (1024-65535). Using default 5000.")
-             port = 5000
+        # Use getattr for safer access to config attributes with defaults
+        port_default = getattr(config, 'FLASK_PORT_DEFAULT', 5000)
+        port = int(os.getenv('FLASK_RUN_PORT', port_default))
+        if not (1024 <= port <= 65535): 
+            logger.warning(f"Configured port {port} is invalid. Defaulting to {port_default}.")
+            port = port_default
     except ValueError:
-        port = 5000
-        logger.warning(f"Invalid FLASK_RUN_PORT environment variable. Using default port {port}.")
+        port_default_for_error = getattr(config, 'FLASK_PORT_DEFAULT', 5000)
+        port = port_default_for_error
+        logger.warning(f"Invalid FLASK_RUN_PORT environment variable. Defaulting to {port_default_for_error}.")
+    
+    host_default = getattr(config, 'FLASK_HOST_DEFAULT', '127.0.0.1') # Changed from 'localhost' to '127.0.0.1' for clarity
+    host = os.getenv('FLASK_RUN_HOST', host_default)
+    
+    logger.info(f"--- Starting Waitress WSGI Server for Flask app '{app.name}' ---")
+    logger.info(f"Serving on http://{host}:{port}")
+    logger.info(f"Ollama Base URL: {getattr(config, 'OLLAMA_BASE_URL', 'N/A')}")
+    logger.info(f"LLM Model: {getattr(config, 'OLLAMA_MODEL', 'N/A')}, Embedding Model: {getattr(config, 'OLLAMA_EMBED_MODEL', 'N/A')}")
+    
+    db_status = 'Ready' if app_db_ready else 'Failed'
+    ai_status = 'Ready' if app_ai_ready else 'Failed/Degraded'
+    
+    index_status_val = 'Not Loaded/Unavailable'
+    if app_vector_store_ready:
+        if ai_core.vector_store and hasattr(ai_core.vector_store, 'index') and hasattr(ai_core.vector_store.index, 'ntotal'):
+            index_status_val = f"Ready ({ai_core.vector_store.index.ntotal} entries)"
+        elif ai_core.vector_store: # Vector store object exists but index details might be missing
+            index_status_val = "Ready (index status unknown or empty)"
+        else: 
+            index_status_val = "Ready (instance missing despite flag)" # Should ideally not happen
+            
+    cache_status_val = "Empty/Not Loaded"
+    if app_doc_cache_loaded and ai_core.document_texts_cache is not None: 
+        cache_status_val = f"{len(ai_core.document_texts_cache)} docs"
+        
+    logger.info(f"Initial Status: DB={db_status} | AI={ai_status} | VectorIndex={index_status_val} | DocCache={cache_status_val}")
+    
+    waitress_threads = getattr(config, 'WAITRESS_THREADS', 8)
+    serve(app, host=host, port=port, threads=waitress_threads)
 
-    # Listen on all network interfaces (0.0.0.0) to be accessible on the LAN
-    host = '0.0.0.0'
-
-    logger.info(f"--- Starting Waitress WSGI Server ---")
-    logger.info(f"Serving Flask app '{app.name}'")
-    logger.info(f"Configuration:")
-    logger.info(f"  - Host: {host}")
-    logger.info(f"  - Port: {port}")
-    logger.info(f"  - Ollama URL: {config.OLLAMA_BASE_URL}")
-    logger.info(f"  - LLM Model: {config.OLLAMA_MODEL}")
-    logger.info(f"  - Embedding Model: {config.OLLAMA_EMBED_MODEL}")
-    logger.info(f"Access URLs:")
-    logger.info(f"  - Local: http://127.0.0.1:{port} or http://localhost:{port}")
-    logger.info(f"  - Network: http://<YOUR_MACHINE_IP>:{port} (Find your IP using 'ip addr' or 'ifconfig')")
-
-    # Log the final status after initialization attempt
-    db_status = 'Ready' if app_db_ready else 'Failed/Unavailable'
-    ai_status = 'Ready' if app_ai_ready else 'Failed/Unavailable'
-    index_status = 'Loaded/Ready' if app_vector_store_ready else ('Not Found/Empty' if app_ai_ready else 'Not Loaded (AI Failed)')
-    cache_status = f"{len(ai_core.document_texts_cache)} docs" if app_doc_cache_loaded else "Failed/Empty"
-    logger.info(f"Component Status: DB={db_status} | AI={ai_status} | Index={index_status} | DocCache={cache_status}")
-    logger.info("Press Ctrl+C to stop the server.")
-
-    # Use Waitress for a production-grade WSGI server
-    serve(app, host=host, port=port, threads=8) # Adjust threads based on expected load/cores
-
-# --- END OF FILE app.py ---
+# --- END OF FILE app.py ---q

@@ -223,9 +223,6 @@ router.post('/', tempAuth, (req, res) => {
                      // Optional: Implement a mechanism to notify the user later or mark the file as unprocessed.
                 } else {
                      console.log(`Background RAG processing initiated/completed for ${originalName} (User: ${userId}). Status: ${ragResult.status}`);
-                     // --- Send a message back to the user via a mechanism (e.g., a status update route or websocket) ---
-                     // For now, we'll rely on the initial message and frontend refresh, but logging is improved.
-                     // A more robust solution would involve sending a specific status update to the client for this file.
                 }
             })
             .catch(error => {
@@ -234,23 +231,12 @@ router.post('/', tempAuth, (req, res) => {
             });
 
         // --- Respond Immediately to the Client ---
-        // Modify the success response to include the expected RAG processing outcome message structure
-        // The frontend FileUploadWidget will now expect this structure for better status display.
         res.status(200).json({
-            message: "File uploaded successfully! Background processing initiated.", // Initial message
+            message: "File uploaded successfully! Background processing started.",
             filename: serverFilename, // Send back the generated server filename
             originalname: originalName,
-            // We cannot send the *final* RAG result here because it's async.
-            // The frontend will rely on the file list refresh or a separate status mechanism.
         });
     });
 });
-
-// Add a route to get the status of RAG processing for a file (Optional but better user experience)
-// router.get('/status/:filename', tempAuth, async (req, res) => {
-//     // This would require the Python service to store processing status
-//     // and a way to query it. Not implemented in current RAG service.
-//     res.status(501).json({ message: "File processing status checking is not implemented." });
-// });
 
 module.exports = router;

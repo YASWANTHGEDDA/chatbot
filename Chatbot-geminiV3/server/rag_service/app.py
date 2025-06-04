@@ -118,45 +118,23 @@ def add_document():
     try:
         # 1. Parse File
         text_content = file_parser.parse_file(file_path)
-        # --- Improved error reporting for large files or failed parsing ---
-        max_size_mb = 20
-        file_size = os.path.getsize(file_path)
-        if file_size > max_size_mb * 1024 * 1024:
-            logger.warning(f"File {file_path} is too large ({file_size / (1024*1024):.2f} MB). Max allowed is {max_size_mb} MB.")
-            return jsonify({
-                "message": f"File '{original_name}' is too large to process (>{max_size_mb} MB). Please upload a smaller file.",
-                "filename": original_name,
-                "status": "skipped",
-                "error": "file_too_large"
-            }), 400
         if text_content is None:
-            logger.warning(f"Skipping embedding for {original_name}: File type not supported, parsing failed, or file too large.")
-            return jsonify({
-                "message": f"File type of '{original_name}' not supported for RAG, parsing failed, or file is too large.",
-                "filename": original_name,
-                "status": "skipped",
-                "error": "parse_failed_or_too_large"
-            }), 400
+            logger.warning(f"Skipping embedding for {original_name}: File type not supported or parsing failed.")
+            return jsonify({"message": f"File type of '{original_name}' not supported for RAG or parsing failed.", "filename": original_name, "status": "skipped"}), 200
+
         if not text_content.strip():
             logger.warning(f"Skipping embedding for {original_name}: No text content found after parsing.")
-            return jsonify({
-                "message": f"No text content extracted from '{original_name}'.",
-                "filename": original_name,
-                "status": "skipped",
-                "error": "no_text_found"
-            }), 400
+            return jsonify({"message": f"No text content extracted from '{original_name}'.", "filename": original_name, "status": "skipped"}), 200
+
         # 2. Chunk Text
         documents = file_parser.chunk_text(text_content, original_name, user_id)
         if not documents:
             logger.warning(f"No chunks created for {original_name}. Skipping add.")
-            return jsonify({
-                "message": f"No text chunks generated for '{original_name}'.",
-                "filename": original_name,
-                "status": "skipped",
-                "error": "no_chunks"
-            }), 400
+            return jsonify({"message": f"No text chunks generated for '{original_name}'.", "filename": original_name, "status": "skipped"}), 200
+
         # 3. Add to Index (faiss_handler now handles dimension checks/recreation)
         faiss_handler.add_documents_to_index(user_id, documents)
+
         logger.info(f"Successfully processed and added document: {original_name} for user: {user_id}")
         return jsonify({
             "message": f"Document '{original_name}' processed and added to index.",

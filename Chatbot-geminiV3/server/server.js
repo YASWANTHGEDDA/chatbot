@@ -1,6 +1,6 @@
 // server/server.js
 const express = require('express');
-const dotenv = require('dotenv');
+// const dotenv = require('dotenv'); // Removed dotenv
 const cors = require('cors');
 const path = require('path');
 const { getLocalIPs } = require('./utils/networkUtils');
@@ -8,18 +8,18 @@ const fs = require('fs');
 const axios = require('axios');
 const os = require('os');
 const mongoose = require('mongoose'); // Import mongoose for closing connection
+require('dotenv').config();
 const readline = require('readline').createInterface({ // For prompting
   input: process.stdin,
   output: process.stdout,
 });
-const { spawn } = require('child_process');
 
 // --- Custom Modules ---
 const connectDB = require('./config/db');
 const { performAssetCleanup } = require('./utils/assetCleanup');
 
 // --- Configuration Loading ---
-dotenv.config();
+// dotenv.config(); // Removed dotenv
 
 // --- Configuration Defaults & Variables ---
 const DEFAULT_PORT = 5001;
@@ -71,80 +71,6 @@ app.use((err, req, res, next) => {
 // --- Server Instance Variable ---
 let server;
 
-// --- RAG Service Management ---
-function startRagService() {
-    return new Promise((resolve, reject) => {
-        console.log('\nStarting RAG service...');
-        const ragServicePath = path.join(__dirname, 'rag_service');
-        
-        // First, ensure Python dependencies are installed
-        console.log('Checking Python dependencies...');
-        const pipProcess = spawn('pip', ['install', '-r', 'requirements.txt'], {
-            cwd: ragServicePath,
-            stdio: 'pipe'
-        });
-
-        pipProcess.on('close', (code) => {
-            if (code !== 0) {
-                console.error('Failed to install Python dependencies');
-                reject(new Error('Python dependencies installation failed'));
-                return;
-            }
-
-            console.log('Python dependencies installed successfully');
-            
-            // Now start the RAG service
-            const pythonProcess = spawn('python', ['app.py'], {
-                cwd: ragServicePath,
-                stdio: 'pipe'
-            });
-
-            let isStarted = false;
-            let startupTimeout;
-            let errorOutput = '';
-
-            pythonProcess.stdout.on('data', (data) => {
-                const output = data.toString();
-                console.log(`RAG Service: ${output}`);
-                if (output.includes('Running on') && !isStarted) {
-                    isStarted = true;
-                    clearTimeout(startupTimeout);
-                    console.log('✓ RAG service started successfully');
-                    resolve(pythonProcess);
-                }
-            });
-
-            pythonProcess.stderr.on('data', (data) => {
-                const error = data.toString();
-                errorOutput += error;
-                console.error(`RAG Service Error: ${error}`);
-            });
-
-            pythonProcess.on('error', (error) => {
-                console.error('Failed to start RAG service:', error);
-                reject(error);
-            });
-
-            pythonProcess.on('exit', (code) => {
-                if (!isStarted && code !== 0) {
-                    console.error('RAG service exited with code:', code);
-                    console.error('Error output:', errorOutput);
-                    reject(new Error(`RAG service exited with code ${code}`));
-                }
-            });
-
-            // Set a longer timeout for startup (60 seconds)
-            startupTimeout = setTimeout(() => {
-                if (!isStarted) {
-                    pythonProcess.kill();
-                    console.error('RAG service startup timed out. Error output:', errorOutput);
-                    reject(new Error('RAG service startup timed out'));
-                }
-            }, 60000); // 60 second timeout
-        });
-    });
-}
-
 // --- Graceful Shutdown Logic ---
 const gracefulShutdown = async (signal) => {
     console.log(`\n${signal} received. Shutting down gracefully...`);
@@ -161,26 +87,16 @@ const gracefulShutdown = async (signal) => {
                 } catch (dbCloseError) {
                     console.error("Error closing MongoDB connection:", dbCloseError);
                 }
-                // Kill RAG service process if it exists
-                if (global.ragProcess) {
-                    global.ragProcess.kill();
-                    console.log('RAG service stopped.');
-                }
                 process.exit(0); // Exit after server and DB are closed
             });
         } else {
-            // If server wasn't assigned, try closing DB and exit
-            try {
-                await mongoose.connection.close();
-                console.log('MongoDB connection closed.');
-            } catch (dbCloseError) {
-                console.error("Error closing MongoDB connection:", dbCloseError);
-            }
-            // Kill RAG service process if it exists
-            if (global.ragProcess) {
-                global.ragProcess.kill();
-                console.log('RAG service stopped.');
-            }
+             // If server wasn't assigned, try closing DB and exit
+             try {
+                 await mongoose.connection.close();
+                 console.log('MongoDB connection closed.');
+             } catch (dbCloseError) {
+                 console.error("Error closing MongoDB connection:", dbCloseError);
+             }
             process.exit(0);
         }
 
@@ -316,17 +232,7 @@ async function startServer() {
         await ensureServerDirectories(); // Check/create assets, backup_assets dirs
         await connectDB(mongoUri); // Connect to MongoDB - Pass URI explicitly
         await performAssetCleanup(); // Backup existing assets, create fresh user folders
-        
-        // Start RAG service
-        try {
-            global.ragProcess = await startRagService();
-            // Wait a moment for the service to fully initialize
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            await checkRagService(pythonRagUrl); // Check Python RAG service status
-        } catch (ragError) {
-            console.error("Failed to start RAG service:", ragError);
-            console.warn("Continuing without RAG service - some features may be limited");
-        }
+        await checkRagService(pythonRagUrl); // Check Python RAG service status
 
         const PORT = port; // Use the configured port
         const availableIPs = getLocalIPs(); // Get all local IPs
@@ -337,9 +243,9 @@ async function startServer() {
             console.log('   Access the application via these URLs (using common frontend ports):');
             const frontendPorts = [3000, 3001, 8080, 5173]; // Common React/Vite ports
             availableIPs.forEach(ip => {
-                frontendPorts.forEach(fp => {
+                 frontendPorts.forEach(fp => {
                     console.log(`   - http://${ip}:${fp} (Frontend) -> Connects to Backend at http://${ip}:${PORT}`);
-                });
+                 });
             });
             console.log('============================\n');
             console.log("💡 Hint: Client automatically detects backend IP based on how you access the frontend.");

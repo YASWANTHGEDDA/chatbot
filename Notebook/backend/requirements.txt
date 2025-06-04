@@ -26,15 +26,17 @@ ollama
 # Option 2: CPU only (Use if no compatible GPU or CUDA setup)
 faiss-cpu
 
-# PDF Processing
+# PDF and ppt Processing
 pymupdf # Used in ai_core.py for PDF text extraction
-
+pypdf #used in ai_core.py for PDF text extraction
+pptx #used in ai_core.py for ppt text extraction
 # Tokenizer (Often required by Langchain text splitters/models)
 tiktoken
 
 # HTTP Requests (Common dependencies, good to specify versions)
 requests
 httpx
+
 
 # Optional: For Markdown rendering on frontend (via CDN)
 # No Python package needed, but noted here.

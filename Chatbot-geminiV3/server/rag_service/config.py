@@ -36,5 +36,3 @@ print(f"Default Assets Directory (for default.py): {DEFAULT_ASSETS_DIR}")
 print(f"RAG Service Port: {RAG_SERVICE_PORT}")
 print(f"Default Index User ID: {DEFAULT_INDEX_USER_ID}")
 print(f"Chunk Size: {CHUNK_SIZE}, Chunk Overlap: {CHUNK_OVERLAP}")
-
-
