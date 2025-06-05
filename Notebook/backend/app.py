@@ -132,7 +132,7 @@ def _trigger_kg_generation_background(filename_for_kg):
 @app.route('/upload', methods=['POST'])
 def upload_file():
     # ... (your existing checks for AI readiness, file part, filename, allowed_file) ...
-    if not app_ai_read y:
+    if not app_ai_ready:
         logger.error("Upload failed: Core AI components (LLM/Embeddings) not initialized.")
         return jsonify({"error": "Cannot process upload: AI components not ready."}), 503
     if not ai_core.embeddings: # Assuming ai_core.embeddings is the embedding model instance

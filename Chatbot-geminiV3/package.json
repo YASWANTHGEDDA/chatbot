@@ -1,0 +1,23 @@
+{
+  "name": "chatbot-gemini-v3",
+  "version": "1.0.0",
+  "description": "Chatbot with Gemini and Ollama integration",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "nodemon server/index.js",
+    "test": "node tests/test_mcp_integration.js",
+    "test:auth": "node tests/test_auth_integration.js",
+    "test:all": "npm run test && npm run test:auth",
+    "test:watch": "nodemon tests/test_mcp_integration.js"
+  },
+  "dependencies": {
+    "axios": "^1.9.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

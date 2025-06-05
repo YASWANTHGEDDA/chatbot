@@ -6,6 +6,7 @@ const ChatHistory = require('../models/ChatHistory');
 const { v4: uuidv4 } = require('uuid');
 const { generateContentWithHistory } = require('../services/geminiService');
 const { getKnowledgeGraphData, formatKGDataForContext } = require('../services/kgService');
+const mcpProtocol = require('../mcp/protocol');
 
 const router = express.Router();
 
@@ -322,6 +323,46 @@ router.get('/session/:sessionId', tempAuth, async (req, res) => {
     } catch (error) {
         console.error(`Error fetching chat session ${sessionId} for user ${userId}:`, error);
         res.status(500).json({ message: 'Failed to retrieve chat session details.' });
+    }
+});
+
+// Create new chat session
+router.post('/session', tempAuth, async (req, res) => {
+    try {
+        const { llm_preference } = req.body;
+        const contextId = await mcpProtocol.createContext(llm_preference, {
+            userId: req.user.id,
+            sessionStart: new Date()
+        });
+        res.json({ contextId });
+    } catch (error) {
+        console.error('Error creating chat session:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get chat history
+router.get('/history', tempAuth, async (req, res) => {
+    try {
+        const history = await ChatHistory.find({ userId: req.user.id })
+            .sort({ createdAt: -1 })
+            .limit(50);
+        res.json({ history });
+    } catch (error) {
+        console.error('Error getting chat history:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// End chat session
+router.delete('/session/:contextId', tempAuth, async (req, res) => {
+    try {
+        const { contextId } = req.params;
+        await mcpProtocol.cleanupContext(contextId);
+        res.json({ message: 'Chat session ended successfully' });
+    } catch (error) {
+        console.error('Error ending chat session:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 

@@ -1,63 +1,55 @@
 const mongoose = require('mongoose');
 
-const MessageSchema = new mongoose.Schema({
-    role: {
-        type: String,
-        enum: ['user', 'model'], // Gemini roles
-        required: true
-    },
-    parts: [{
-        text: {
-            type: String,
-            required: true
-        }
-        // _id: false // Mongoose adds _id by default, can disable if truly not needed per part
-    }],
-    timestamp: {
-        type: Date,
-        default: Date.now
-    }
-}, { _id: false }); // Don't create separate _id for each message object in the array
-
-const ChatHistorySchema = new mongoose.Schema({
+const chatHistorySchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true,
-        index: true,
+        required: true
     },
-    sessionId: {
+    message: {
+        type: String,
+        required: true
+    },
+    response: {
+        type: String,
+        required: true
+    },
+    references_json: [{
+        source: String,
+        chunk_index: Number,
+        content_preview: String
+    }],
+    cot_reasoning: String,
+    llm_used: {
         type: String,
         required: true,
-        unique: true,
-        index: true,
+        enum: ['gemini', 'ollama']
     },
-    messages: [MessageSchema], // Array of message objects
-    createdAt: {
-        type: Date,
-        default: Date.now,
-    },
-    updatedAt: {
-        type: Date,
-        default: Date.now,
+    contextId: String,
+    metadata: {
+        type: Map,
+        of: mongoose.Schema.Types.Mixed
     }
+}, {
+    timestamps: true
 });
 
-// Update `updatedAt` timestamp before saving any changes
-ChatHistorySchema.pre('save', function (next) {
-    if (this.isModified()) { // Only update if document changed
-      this.updatedAt = Date.now();
-    }
-    next();
-});
+// Index for faster queries
+chatHistorySchema.index({ userId: 1, createdAt: -1 });
 
-// Also update `updatedAt` on findOneAndUpdate operations if messages are modified
-ChatHistorySchema.pre('findOneAndUpdate', function(next) {
-  this.set({ updatedAt: new Date() });
-  next();
-});
+// Add method to get recent history
+chatHistorySchema.statics.getRecentHistory = async function(userId, limit = 50) {
+    return this.find({ userId })
+        .sort({ createdAt: -1 })
+        .limit(limit);
+};
 
+// Add method to get context history
+chatHistorySchema.statics.getContextHistory = async function(contextId) {
+    return this.find({ contextId })
+        .sort({ createdAt: 1 });
+};
 
-const ChatHistory = mongoose.model('ChatHistory', ChatHistorySchema);
+const ChatHistory = mongoose.model('ChatHistory', chatHistorySchema);
 
 module.exports = ChatHistory;
