@@ -1,7 +1,7 @@
 // client/src/components/ChatPage.js
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { sendMessage, saveChatHistory, getUserFiles, queryRagService } from '../services/api';
+import { sendMessage, saveChatHistory, getUserFiles, queryRagService, generateResponse, streamResponse } from '../services/api';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { v4 as uuidv4 } from 'uuid';
@@ -10,6 +10,8 @@ import SystemPromptWidget, { availablePrompts, getPromptTextById } from './Syste
 import HistoryModal from './HistoryModal';
 import FileUploadWidget from './FileUploadWidget';
 import FileManagerWidget from './FileManagerWidget';
+import LLMConfigWidget from './LLMConfigWidget';
+import KnowledgeGraphWidget from './KnowledgeGraphWidget';
 
 import './ChatPage.css';
 
@@ -28,6 +30,17 @@ const ChatPage = ({ setIsAuthenticated }) => {
     const [fileRefreshTrigger, setFileRefreshTrigger] = useState(0);
     const [hasFiles, setHasFiles] = useState(false);
     const [isRagEnabled, setIsRagEnabled] = useState(false);
+    const [llmConfig, setLlmConfig] = useState({
+        model: '',
+        temperature: 0.7,
+        maxTokens: 1000,
+        topP: 0.9,
+        frequencyPenalty: 0,
+        presencePenalty: 0
+    });
+    const [selectedNode, setSelectedNode] = useState(null);
+    const [isStreaming, setIsStreaming] = useState(false);
+    const streamTimeoutRef = useRef(null);
 
     const messagesEndRef = useRef(null);
     const navigate = useNavigate();
@@ -196,17 +209,25 @@ const ChatPage = ({ setIsAuthenticated }) => {
         }
      }, [isLoading, isRagLoading, saveAndReset]);
 
+    const handleLlmConfigChange = useCallback((newConfig) => {
+        setLlmConfig(newConfig);
+    }, []);
+
+    const handleNodeClick = useCallback((nodeId) => {
+        setSelectedNode(nodeId);
+        // You can add additional logic here to handle node selection
+    }, []);
+
     const handleSendMessage = useCallback(async (e) => {
         if (e) e.preventDefault();
         const textToSend = inputText.trim();
-        const currentSessionId = localStorage.getItem('sessionId'); // Get fresh ID
-        const currentUserId = localStorage.getItem('userId'); // Get fresh ID
+        const currentSessionId = localStorage.getItem('sessionId');
+        const currentUserId = localStorage.getItem('userId');
 
         if (!textToSend || isLoading || isRagLoading || !currentSessionId || !currentUserId) {
             if (!currentSessionId || !currentUserId) {
-                 setError("Session invalid. Please refresh or log in again.");
-                 // Optionally trigger logout if auth info is missing
-                 if (!currentUserId) handleLogout(true);
+                setError("Session invalid. Please refresh or log in again.");
+                if (!currentUserId) handleLogout(true);
             }
             return;
         }
@@ -223,68 +244,84 @@ const ChatPage = ({ setIsAuthenticated }) => {
         if (isRagEnabled) {
             setIsRagLoading(true);
             try {
-                console.log("RAG Enabled: Querying backend /rag endpoint...");
-                // Interceptor adds user ID header
                 const ragResponse = await queryRagService({ message: textToSend });
                 relevantDocs = ragResponse.data.relevantDocs || [];
-                console.log(`RAG Query returned ${relevantDocs.length} documents.`);
             } catch (err) {
                 console.error("RAG Query Error:", err.response || err);
                 ragError = err.response?.data?.message || "Failed to retrieve documents for RAG.";
                 if (err.response?.status === 401) {
-                     console.warn("Received 401 during RAG query, logging out.");
-                     handleLogout(true);
-                     setIsRagLoading(false); // Stop loading before returning
-                     return; // Stop processing if auth failed
+                    handleLogout(true);
+                    setIsRagLoading(false);
+                    return;
                 }
             } finally {
                 setIsRagLoading(false);
             }
-        } else {
-            console.log("RAG Disabled: Skipping RAG query.");
         }
 
         setIsLoading(true);
+        setIsStreaming(true);
         const historyForAPI = previousMessages;
         const systemPromptToSend = editableSystemPromptText;
 
         try {
-            if (ragError) {
-                 setError(prev => prev ? `${prev} | RAG Error: ${ragError}` : `RAG Error: ${ragError}`);
-            }
-
-            console.log(`Sending message to backend /message. RAG Enabled: ${isRagEnabled}, Docs Found: ${relevantDocs.length}`);
-            // Interceptor adds user ID header
-            const sendMessageResponse = await sendMessage({
+            const messageData = {
                 message: textToSend,
                 history: historyForAPI,
                 sessionId: currentSessionId,
                 systemPrompt: systemPromptToSend,
-                isRagEnabled: isRagEnabled,
-                relevantDocs: relevantDocs
-            });
+                isRagEnabled,
+                relevantDocs,
+                llmConfig
+            };
 
-            const modelReply = sendMessageResponse.data.reply;
-            if (modelReply?.role && modelReply?.parts?.length > 0) {
-                setMessages(prev => [...prev, modelReply]);
+            if (llmConfig.stream) {
+                const response = await streamResponse(messageData);
+                const reader = response.data.getReader();
+                let accumulatedText = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const text = new TextDecoder().decode(value);
+                    accumulatedText += text;
+                    setMessages(prev => {
+                        const newMessages = [...prev];
+                        const lastMessage = newMessages[newMessages.length - 1];
+                        if (lastMessage && lastMessage.role === 'assistant') {
+                            lastMessage.parts[0].text = accumulatedText;
+                        } else {
+                            newMessages.push({
+                                role: 'assistant',
+                                parts: [{ text: accumulatedText }],
+                                timestamp: new Date()
+                            });
+                        }
+                        return newMessages;
+                    });
+                }
             } else {
-                throw new Error("Invalid reply structure received from backend.");
+                const response = await generateResponse(messageData);
+                const assistantMessage = {
+                    role: 'assistant',
+                    parts: [{ text: response.data.text }],
+                    timestamp: new Date()
+                };
+                setMessages(prev => [...prev, assistantMessage]);
             }
-            setError(prev => prev && (prev.includes("Session invalid") || prev.includes("Critical Error")) ? prev : '');
-
         } catch (err) {
-            const errorMessage = err.response?.data?.message || err.message || 'Failed to get response.';
-            setError(prev => prev ? `${prev} | Chat Error: ${errorMessage}` : `Chat Error: ${errorMessage}`);
-            console.error("Send Message Error:", err.response || err);
-            setMessages(previousMessages); // Rollback UI
-            if (err.response?.status === 401 && !window.location.pathname.includes('/login')) {
-                 console.warn("Received 401 sending message, logging out.");
-                 handleLogout(true);
+            console.error("Message Send Error:", err.response || err);
+            const errorMsg = err.response?.data?.message || err.message || 'Failed to send message.';
+            setError(`Error: ${errorMsg}`);
+            if (err.response?.status === 401) {
+                handleLogout(true);
             }
         } finally {
             setIsLoading(false);
+            setIsStreaming(false);
         }
-    }, [inputText, isLoading, isRagLoading, messages, editableSystemPromptText, isRagEnabled, handleLogout]); // Removed sessionId/userId state deps
+    }, [inputText, isLoading, isRagLoading, messages, editableSystemPromptText, isRagEnabled, llmConfig, handleLogout]);
 
     const handleEnterKey = useCallback((e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -313,6 +350,14 @@ const ChatPage = ({ setIsAuthenticated }) => {
                  />
                 <FileUploadWidget onUploadSuccess={triggerFileRefresh} />
                 <FileManagerWidget refreshTrigger={fileRefreshTrigger} />
+                <LLMConfigWidget
+                    onConfigChange={handleLlmConfigChange}
+                    initialConfig={llmConfig}
+                />
+                <KnowledgeGraphWidget
+                    query={inputText}
+                    onNodeClick={handleNodeClick}
+                />
             </div>
 
             <div className="chat-container">

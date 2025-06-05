@@ -426,3 +426,245 @@ body {
      .input-area button svg { width: 18px; height: 18px; }
 
 }
+
+.chat-page {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background-color: #f5f5f5;
+}
+
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+    background-color: white;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: #1976d2;
+    color: white;
+}
+
+.chat-header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.header-buttons {
+    display: flex;
+    gap: 1rem;
+}
+
+.header-buttons button {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.header-buttons button:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.header-buttons button:disabled {
+    background-color: rgba(255, 255, 255, 0.1);
+    cursor: not-allowed;
+}
+
+.chat-main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.message {
+    max-width: 80%;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.message.user {
+    align-self: flex-end;
+    background-color: #e3f2fd;
+}
+
+.message.assistant {
+    align-self: flex-start;
+    background-color: #f5f5f5;
+}
+
+.message-content {
+    line-height: 1.5;
+}
+
+.message-content p {
+    margin: 0 0 1rem 0;
+}
+
+.message-content p:last-child {
+    margin-bottom: 0;
+}
+
+.thinking {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #666;
+}
+
+.thinking::after {
+    content: '';
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid #666;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.chat-sidebar {
+    width: 300px;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-left: 1px solid #dee2e6;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.chat-input {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    background-color: white;
+    border-top: 1px solid #dee2e6;
+}
+
+.chat-input input {
+    flex: 1;
+    padding: 0.75rem;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.chat-input button {
+    padding: 0.75rem 1.5rem;
+    background-color: #1976d2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.chat-input button:hover {
+    background-color: #1565c0;
+}
+
+.chat-input button:disabled {
+    background-color: #90caf9;
+    cursor: not-allowed;
+}
+
+.error-message {
+    position: fixed;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 1rem 2rem;
+    background-color: #f44336;
+    color: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+}
+
+/* LLM Config Widget Styles */
+.llm-config-widget {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.llm-config-widget .MuiFormControl-root {
+    margin-bottom: 1rem;
+}
+
+.llm-config-widget .MuiSlider-root {
+    margin: 1rem 0;
+}
+
+.llm-config-widget .MuiTypography-root {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Knowledge Graph Widget Styles */
+.knowledge-graph-widget {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    height: 400px;
+    position: relative;
+}
+
+.knowledge-graph-widget .vis-network {
+    outline: none;
+}
+
+.knowledge-graph-widget .empty-state {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: #666;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .chat-main {
+        flex-direction: column;
+    }
+
+    .chat-sidebar {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid #dee2e6;
+    }
+
+    .message {
+        max-width: 90%;
+    }
+}
