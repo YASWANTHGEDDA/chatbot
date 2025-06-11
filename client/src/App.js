@@ -1,54 +1,23 @@
 // client/src/App.js
 import React, { useState, useEffect, Suspense } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import { ThemeProvider, createTheme, CircularProgress } from '@mui/material';
+import { CircularProgress } from '@mui/material';
+
+// Import our custom ThemeProvider
+import { ThemeProvider } from './context/ThemeContext';
 
 // Lazy load components to reduce initial bundle size
 const AuthPage = React.lazy(() => import('./components/AuthPage'));
 const ChatPage = React.lazy(() => import('./components/ChatPage'));
 
-const darkTheme = createTheme({
-  palette: {
-    mode: 'dark',
-    background: {
-      default: '#1a1a1a',
-      paper: '#2d2d2d',
-    },
-    primary: {
-      main: '#90caf9',
-    },
-    text: {
-      primary: '#ffffff',
-      secondary: '#b3b3b3',
-    }
-  },
-  components: {
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          backgroundColor: '#2d2d2d',
-          color: '#ffffff',
-        }
-      }
-    },
-    MuiPaper: {
-      styleOverrides: {
-        root: {
-          backgroundColor: '#2d2d2d',
-          color: '#ffffff',
-        }
-      }
-    }
-  }
-});
-
+// The LoadingFallback now inherits the background color from the body,
+// which is controlled by our new theme CSS variables.
 const LoadingFallback = () => (
-    <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
+    <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
         height: '100vh',
-        backgroundColor: '#121212'
     }}>
         <CircularProgress />
     </div>
@@ -74,14 +43,16 @@ function App() {
     }, []);
 
     return (
-        <ThemeProvider theme={darkTheme}>
+        // Wrap the entire application with our custom ThemeProvider.
+        // It no longer needs a 'theme' prop, as it manages state internally.
+        <ThemeProvider>
             <Router>
-                <div style={{ 
-                    minHeight: '100vh',
-                    backgroundColor: '#1a1a1a',
-                    color: '#ffffff',
-                    padding: '20px'
-                }}>
+                {/*
+                  This div is simplified. We removed the hardcoded dark theme colors.
+                  The background and text colors are now automatically applied to the <body>
+                  element by the styles in `index.css` based on the active theme.
+                */}
+                <div className="app-container">
                     <Suspense fallback={<LoadingFallback />}>
                         <Routes>
                             <Route

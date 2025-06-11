@@ -1,163 +1,175 @@
 /* client/src/components/AnalysisResultModal.css */
-.analysis-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000; /* Ensure it's on top */
+
+/* Keyframe animations for a smooth entrance/exit */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes scaleUp {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 
-.analysis-modal-content {
-    background-color: var(--bg-secondary, #2c2c34); /* Use your theme's secondary bg */
-    color: var(--text-primary, #e0e0e0);
-    padding: 20px;
-    border-radius: 8px;
-    width: 80%;
-    max-width: 700px;
-    max-height: 85vh;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+/* The semi-transparent backdrop */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+  /* Adds a modern blur effect to the background */
+  backdrop-filter: blur(4px);
 }
 
-.analysis-modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--border-color, #444);
-    padding-bottom: 10px;
-    margin-bottom: 15px;
+/* The main modal container */
+.modal-content {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  animation: scaleUp 0.2s ease-out;
 }
 
-.analysis-modal-header h3 {
-    margin: 0;
-    font-size: 1.2em;
+/* Header section with title and close button */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-primary);
+  flex-shrink: 0;
 }
 
-.analysis-modal-close-btn {
-    background: none;
-    border: none;
-    font-size: 1.8em;
-    cursor: pointer;
-    color: var(--text-secondary, #aaa);
-    padding: 0;
-    line-height: 1;
-}
-.analysis-modal-close-btn:hover {
-    color: var(--text-primary, #fff);
+.modal-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
 }
 
-.analysis-modal-body {
-    overflow-y: auto; /* Make body scrollable if content is long */
-    flex-grow: 1;
-    margin-bottom: 15px;
+.modal-close-button {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, color 0.2s;
+}
+.modal-close-button:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
-.analysis-modal-body h4 {
-    margin-top: 15px;
-    margin-bottom: 8px;
-    font-size: 1em;
-    border-bottom: 1px dashed var(--border-color, #444);
-    padding-bottom: 5px;
-}
-.analysis-modal-body h4:first-child {
-    margin-top: 0;
+/* Main body of the modal where content lives */
+.modal-body {
+  overflow-y: auto;
+  flex-grow: 1;
+  padding: 1.5rem;
 }
 
-
-.analysis-thinking-details {
-    background-color: var(--bg-input, #25252c);
-    border: 1px solid var(--border-color, #444);
-    border-radius: 4px;
-    margin-bottom: 15px;
+.modal-document-name {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-top: 0;
+  margin-bottom: 1rem;
+  background-color: var(--bg-tertiary);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  display: inline-block;
 }
 
-.analysis-thinking-details summary {
-    padding: 8px 12px;
-    font-weight: bold;
-    cursor: pointer;
-    outline: none;
+.modal-thinking-details {
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+.modal-thinking-details summary {
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  color: var(--text-secondary);
+  transition: background-color 0.2s;
+}
+.modal-thinking-details[open] summary {
+  border-bottom: 1px solid var(--border-primary);
+}
+.modal-thinking-details:hover {
+    border-color: var(--accent-active);
+}
+.modal-thinking-details pre {
+  padding: 1rem;
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-size: 0.85rem;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  max-height: 250px;
+  overflow-y: auto;
 }
 
-.analysis-thinking-details pre.analysis-thinking-text {
-    padding: 10px 12px;
-    margin: 0;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    font-size: 0.9em;
-    background-color: var(--bg-primary, #1e1e24); /* Slightly different background */
-    border-top: 1px solid var(--border-color, #444);
-    max-height: 200px; /* Limit height of thinking block */
-    overflow-y: auto;
+/* The main container for the analysis output (text or diagram) */
+.modal-result-container {
+  background-color: var(--bg-primary);
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-primary);
+  min-height: 200px;
+  /* Ensures any generated markdown looks good */
+  line-height: 1.7;
+}
+.modal-result-container ul, .modal-result-container ol {
+  padding-left: 1.5rem;
+}
+.modal-result-container li {
+  margin-bottom: 0.5rem;
 }
 
-.analysis-result-text {
-    background-color: var(--bg-primary-alt, #282830); /* Slightly different from main modal bg */
-    padding: 10px;
-    border-radius: 4px;
-    border: 1px solid var(--border-color-light, #383840);
+/* Footer with action buttons */
+.modal-footer {
+  border-top: 1px solid var(--border-primary);
+  padding: 1rem 1.5rem;
+  text-align: right;
+  flex-shrink: 0;
+  background-color: var(--bg-tertiary);
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
 }
 
-/* Style for ReactMarkdown output if needed (lists, headings, etc.) */
-.analysis-result-text ul, .analysis-result-text ol {
-    padding-left: 20px;
+/*
+  START OF FIX:
+  This rule now uses the correct theme variables for both the background
+  and, crucially, the text color.
+*/
+.modal-action-button {
+  padding: 0.6rem 1.25rem;
+  background-color: var(--accent-active);
+  color: var(--text-on-accent); /* THIS IS THE FIX */
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
 }
-.analysis-result-text li {
-    margin-bottom: 5px;
-}
- .analysis-result-text pre { /* For code blocks if any in mindmap or other results */
-    background-color: var(--bg-input);
-    padding: 8px;
-    border-radius: 4px;
-    overflow-x: auto;
-}
+/* END OF FIX */
 
-
-.analysis-modal-footer {
-    border-top: 1px solid var(--border-color, #444);
-    padding-top: 15px;
-    text-align: right;
-}
-
-.analysis-modal-footer button {
-    padding: 8px 15px;
-    background-color: var(--accent-blue, #007bff);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.analysis-modal-footer button:hover {
-    background-color: var(--accent-blue-dark, #0056b3);
-}
-
-/* client/src/components/AnalysisResultModal.css (ADD THIS CSS) */
-
-/* Ensure the modal body can scroll if content overflows */
-.analysis-modal-body {
-    overflow-y: auto;
-    max-height: 70vh; /* Adjust as needed */
-    padding-right: 15px; /* Add some padding for the scrollbar */
-}
-
-/* Style the container for the analysis result to be flexible */
-.analysis-result-text {
-    background-color: #1e1e1e; /* Dark background for the content area */
-    border: 1px solid #333;
-    border-radius: 5px;
-    padding: 15px;
-    margin-top: 10px;
-    min-height: 200px;
-}
-
-/* Target the SVG inside the Mermaid container for better display */
-.analysis-result-text .mermaid-container svg {
-    max-width: 100% !important; /* Ensure it's responsive */
-    height: auto !important;   /* Maintain aspect ratio */
+.modal-action-button:hover {
+  background-color: var(--accent-hover);
 }

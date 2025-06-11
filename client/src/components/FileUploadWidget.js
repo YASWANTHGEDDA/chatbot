@@ -36,8 +36,6 @@ const FileUploadWidget = ({ onUploadSuccess }) => {
       setStatusMessage(`Selected: ${file.name}`);
       setUploadStatus('');
 
-    } else {
-        // Handle user cancelling file selection if needed
     }
   };
 
@@ -47,7 +45,6 @@ const FileUploadWidget = ({ onUploadSuccess }) => {
       setUploadStatus('error');
       return;
     }
-    // Ensure userId exists before uploading
      const currentUserId = localStorage.getItem('userId');
      if (!currentUserId) {
          setStatusMessage('Error: Not logged in. Cannot upload file.');
@@ -62,12 +59,10 @@ const FileUploadWidget = ({ onUploadSuccess }) => {
     formData.append('file', selectedFile);
 
     try {
-      // Interceptor adds user ID header
       const response = await uploadFile(formData);
 
       setUploadStatus('success');
       setStatusMessage(response.data.message || 'Upload successful!');
-      console.log('Upload successful:', response.data);
 
       setSelectedFile(null);
       if (fileInputRef.current) {
@@ -79,7 +74,6 @@ const FileUploadWidget = ({ onUploadSuccess }) => {
       }
 
       setTimeout(() => {
-          // Check if status is still success before clearing
           setUploadStatus(prevStatus => prevStatus === 'success' ? '' : prevStatus);
           setStatusMessage(prevMsg => prevMsg === (response.data.message || 'Upload successful!') ? '' : prevMsg);
       }, 4000);
@@ -89,10 +83,6 @@ const FileUploadWidget = ({ onUploadSuccess }) => {
       console.error("Upload Error:", err.response || err);
       setUploadStatus('error');
       setStatusMessage(err.response?.data?.message || 'Upload failed. Please check the file or try again.');
-      if (err.response?.status === 401) {
-          console.warn("FileUpload: Received 401 during upload.");
-          // Consider calling a logout function passed via props or context
-      }
     }
   };
 
@@ -101,8 +91,10 @@ const FileUploadWidget = ({ onUploadSuccess }) => {
   };
 
   return (
-    <div className="file-upload-widget">
-      <h4>Upload File</h4>
+    // MODIFICATION: Added 'sidebar-panel' class for consistent padding.
+    <div className="file-upload-widget sidebar-panel">
+      {/* MODIFICATION: Changed h4 to a consistent header style */}
+      <h3 className="sidebar-header">Upload File</h3>
       <input
         type="file"
         ref={fileInputRef}
@@ -135,20 +127,84 @@ const FileUploadWidget = ({ onUploadSuccess }) => {
 };
 
 // --- CSS for FileUploadWidget ---
+// MODIFICATION: All CSS rules have been updated to use theme variables.
 const FileUploadWidgetCSS = `
-/* client/src/components/FileUploadWidget.css */
-.file-upload-widget { display: flex; flex-direction: column; gap: 12px; padding: 20px; box-sizing: border-box; }
-.file-upload-widget h4 { margin-top: 0; margin-bottom: 10px; color: var(--text-primary); font-size: 0.95rem; font-weight: 600; }
-.select-file-btn, .upload-btn { width: 100%; padding: 9px 15px; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, opacity 0.2s ease; background-color: #2a2a30; color: var(--text-primary); text-align: center; box-sizing: border-box; }
-.select-file-btn:hover:not(:disabled), .upload-btn:hover:not(:disabled) { background-color: #3a3a40; border-color: #4a4a50; }
-.select-file-btn:disabled, .upload-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.upload-btn { background-color: var(--accent-blue); border-color: var(--accent-blue); color: var(--user-message-text); }
-.upload-btn:hover:not(:disabled) { background-color: var(--accent-blue-light); border-color: var(--accent-blue-light); }
-.upload-btn:disabled { background-color: #3a3a40; border-color: var(--border-color); color: var(--text-secondary); opacity: 0.7; }
-.status-message { font-size: 0.8rem; color: var(--text-secondary); padding: 8px 10px; background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; text-align: center; min-height: 1.6em; line-height: 1.4; word-break: break-word; transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease; }
-.status-message.uploading { color: var(--accent-blue-light); border-color: var(--accent-blue); }
-.status-message.success { color: #52c41a; border-color: #52c41a; background-color: rgba(82, 196, 26, 0.1); }
-.status-message.error { color: var(--error-color); border-color: var(--error-color); background-color: var(--error-bg); }
+.file-upload-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  /* Padding is now inherited from the .sidebar-panel class for consistency */
+}
+
+/* The .sidebar-header class from ChatPage.css will now style the header */
+
+.select-file-btn, .upload-btn {
+  width: 100%;
+  padding: 10px 15px; /* Slightly larger padding for better click area */
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+/* "Choose File" button style (secondary look) */
+.select-file-btn {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+}
+.select-file-btn:hover:not(:disabled) {
+  border-color: var(--accent-active);
+}
+
+/* "Upload" button style (primary action look) */
+.upload-btn {
+  background-color: var(--accent-active);
+  color: var(--text-on-accent); /* CRITICAL FIX: Ensures text is light */
+  border: 1px solid var(--accent-active);
+}
+.upload-btn:hover:not(:disabled) {
+  background-color: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+/* Disabled state for both buttons */
+.select-file-btn:disabled, .upload-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Status message styling */
+.status-message {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  padding: 8px 10px;
+  background-color: var(--bg-primary); /* Use primary BG for better contrast */
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  text-align: center;
+  min-height: 1.6em;
+  line-height: 1.4;
+  word-break: break-word;
+  transition: all 0.2s ease;
+}
+
+.status-message.uploading {
+  color: var(--accent-active);
+  border-color: var(--accent-active);
+}
+.status-message.success {
+  color: #27ae60; /* Using a standard green for success */
+  border-color: #27ae60;
+  background-color: rgba(39, 174, 96, 0.1);
+}
+.status-message.error {
+  color: var(--error-color, #e53e3e);
+  border-color: var(--error-color, #e53e3e);
+  background-color: var(--error-bg, rgba(229, 62, 62, 0.1));
+}
 `;
 // --- Inject CSS ---
 const styleTagUploadId = 'file-upload-widget-styles';

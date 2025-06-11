@@ -1,98 +1,117 @@
-// client/src/components/AnalysisResultModal.js (UPDATED)
-
-import React from 'react';
+// client/src/components/AnalysisResultModal.js
+import React, { useState, useCallback, useEffect } from 'react'; // Import hooks
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import './AnalysisResultModal.css';
+import { FiX, FiCopy } from 'react-icons/fi'; // Import Copy icon
 
-// --- MODIFICATION START: Import the new MermaidDiagram component ---
+import './AnalysisResultModal.css';
 import MermaidDiagram from './MermaidDiagram';
-// --- MODIFICATION END ---
 
 const AnalysisResultModal = ({ isOpen, onClose, analysisData }) => {
+    // State to manage the text of the copy button for user feedback
+    const [isCopied, setIsCopied] = useState(false);
+
+    // Effect to prevent body scrolling when the modal is open
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+            // Also reset the copy button state whenever the modal opens
+            setIsCopied(false);
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        // Cleanup function
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
     if (!isOpen || !analysisData) {
         return null;
     }
 
     const { type, result, thinking, documentName } = analysisData;
 
-    // --- MODIFICATION START: Create a helper function to render the result ---
+    // Handler function to copy the result text to the clipboard
+    const handleCopy = useCallback(() => {
+        if (result) {
+            navigator.clipboard.writeText(result).then(() => {
+                setIsCopied(true);
+                // Reset the button text after 2 seconds
+                setTimeout(() => setIsCopied(false), 2000);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+                alert('Failed to copy text.');
+            });
+        }
+    }, [result]);
+
     const renderResult = () => {
-        // If the analysis type is 'mindmap' and we have a result, use our new component
         if (type === 'mindmap' && result) {
-            
-            // --- NEW CONVERTER LOGIC ---
             const convertMarkdownToMermaid = (markdown) => {
                 const lines = markdown.split('\n');
                 let mermaidSyntax = 'mindmap\n';
-                
                 lines.forEach(line => {
-                    // Trim the line to handle potential leading/trailing spaces
                     const trimmedLine = line.trim();
                     if (trimmedLine) {
-                        // Check if the line starts with a Markdown list character
-                        if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ')) {
-                            // Calculate indentation based on the original line's leading spaces
-                            const indentation = ' '.repeat(line.search(/\S/)); // Number of leading spaces
-                            const text = trimmedLine.substring(2); // Remove '- ' or '* '
-                            mermaidSyntax += `${indentation}  ${text}\n`; // Add 2 extra spaces for Mermaid
-                        } else {
-                            // If it's not a list item, assume it's a root or other node
-                            mermaidSyntax += `  ${trimmedLine}\n`;
-                        }
+                        const indentation = ' '.repeat(line.search(/\S/));
+                        const text = trimmedLine.replace(/^- \*/, '').trim();
+                        mermaidSyntax += `${indentation}  ${text}\n`;
                     }
                 });
                 return mermaidSyntax;
             };
 
             let chartText = result;
-
-            // Check if the LLM followed instructions.
             if (!result.trim().startsWith('mindmap')) {
-                console.warn("LLM failed to produce correct Mermaid syntax. Attempting to convert from Markdown.");
-                // If not, try to convert the Markdown list it provided into Mermaid syntax.
                 chartText = convertMarkdownToMermaid(result);
             }
-            // --- END OF CONVERTER LOGIC ---
-
-            console.log("--- FINAL MERMAID SYNTAX (after potential conversion) ---");
-            console.log(chartText);
-            console.log("-----------------------------------------------------");
-
             return <MermaidDiagram chart={chartText} />;
         }
-
-        // For any other analysis type, use the existing Markdown renderer
+        // This 'return' is critical and was fixed previously
         return (
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {result || "No analysis result provided."}
             </ReactMarkdown>
         );
     };
-    // --- MODIFICATION END ---
+
+    // The 'mindmap' type is not suitable for raw text copying
+    const isCopyDisabled = isCopied || type === 'mindmap' || !result;
 
     return (
-        <div className="analysis-modal-overlay" onClick={onClose}>
-            <div className="analysis-modal-content" onClick={(e) => e.stopPropagation()}>
-                <div className="analysis-modal-header">
-                    <h3>{type ? type.toUpperCase() : 'Analysis'} Results for: {documentName || 'Document'}</h3>
-                    <button onClick={onClose} className="analysis-modal-close-btn">×</button>
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                    <h3 className="modal-title">
+                        {type ? `${type.charAt(0).toUpperCase() + type.slice(1)}` : 'Analysis'} Results
+                    </h3>
+                    <button onClick={onClose} className="modal-close-button" title="Close">
+                        <FiX size={24} />
+                    </button>
                 </div>
-                <div className="analysis-modal-body">
+                <div className="modal-body">
+                    <p className="modal-document-name">File: {documentName || 'Document'}</p>
                     {thinking && (
-                        <details className="analysis-thinking-details">
-                            <summary>Thinking Process</summary>
-                            <pre className="analysis-thinking-text">{thinking}</pre>
+                        <details className="modal-thinking-details">
+                            <summary>View Thinking Process</summary>
+                            <pre>{thinking}</pre>
                         </details>
                     )}
-                    <h4>Analysis Output:</h4>
-                    {/* --- MODIFICATION: Use our new render function --- */}
-                    <div className="analysis-result-text">
+                    <div className="modal-result-container">
                         {renderResult()}
                     </div>
                 </div>
-                <div className="analysis-modal-footer">
-                    <button onClick={onClose}>Close</button>
+                <div className="modal-footer">
+                    <button
+                        onClick={handleCopy}
+                        className="modal-secondary-button"
+                        disabled={isCopyDisabled}
+                    >
+                        <FiCopy size={16} style={{ marginRight: '8px' }} />
+                        {isCopied ? 'Copied!' : 'Copy'}
+                    </button>
+                    <button onClick={onClose} className="modal-action-button">Close</button>
                 </div>
             </div>
         </div>
