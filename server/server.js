@@ -6,52 +6,49 @@ const { getLocalIPs } = require('./utils/networkUtils');
 const fs = require('fs');
 const axios = require('axios');
 const os = require('os');
-const mongoose = require('mongoose'); // Import mongoose for closing connection
-require('dotenv').config(); // Loads variables from .env into process.env
-const readline = require('readline').createInterface({ // For prompting
+const mongoose = require('mongoose');
+require('dotenv').config();
+const readline = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout,
 });
 
-// --- Custom Modules ---
 const connectDB = require('./config/db');
 const { performAssetCleanup } = require('./utils/assetCleanup');
-const analysisRoutes = require('./routes/analysis'); // <<<--- ADDED THIS LINE
+const analysisRoutes = require('./routes/analysis');
 
-// --- Configuration Defaults & Variables ---
-// These defaults are used if the corresponding environment variables are NOT set in .env
+// --- START OF MODIFICATION ---
+// Import the new history routes
+const historyRoutes = require('./routes/history');
+// --- END OF MODIFICATION ---
+
 const DEFAULT_PORT = 5000;
 const DEFAULT_MONGO_URI = 'mongodb://localhost:27017/chatbotGeminiDB';
-// MODIFIED: Default URL for the Python service, matching its actual port
 const DEFAULT_PYTHON_SERVICE_URL = 'http://localhost:5001';
 
-// Load from environment variables, with fallbacks to defaults
 let port = process.env.PORT || DEFAULT_PORT;
-let mongoUri = process.env.MONGO_URI || ''; // Will prompt if empty and .env doesn't provide
-// MODIFIED: Use PYTHON_AI_CORE_SERVICE_URL from .env
-let pythonServiceUrl = process.env.PYTHON_AI_CORE_SERVICE_URL || ''; // Will prompt if empty and .env doesn't provide
-let geminiApiKey = process.env.GEMINI_API_KEY || ''; // MUST be set via environment
+let mongoUri = process.env.MONGO_URI || '';
+let pythonServiceUrl = process.env.PYTHON_AI_CORE_SERVICE_URL || '';
+let geminiApiKey = process.env.GEMINI_API_KEY || '';
 
-// --- Express Application Setup ---
 const app = express();
-
-// --- Core Middleware ---
-app.use(cors()); // Allows requests from frontend
+app.use(cors());
 app.use(express.json());
 
-// --- Basic Root Route ---
 app.get('/', (req, res) => res.send('Chatbot Backend API is running...'));
 
-// --- API Route Mounting ---
 app.use('/api/network', require('./routes/network'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/chat', require('./routes/chat'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/files', require('./routes/files'));
 app.use('/api/syllabus', require('./routes/syllabus'));
-app.use('/api/analysis', analysisRoutes); // <<<--- AND MOUNTED IT HERE
+app.use('/api/analysis', analysisRoutes);
+// --- START OF MODIFICATION ---
+// Mount the new history routes
+app.use('/api/history', historyRoutes);
+// --- END OF MODIFICATION ---
 
-// --- Centralized Error Handling Middleware ---
 app.use((err, req, res, next) => {
     console.error("Unhandled Error:", err.stack || err);
     const statusCode = err.status || 500;
@@ -65,10 +62,8 @@ app.use((err, req, res, next) => {
     res.status(statusCode).send(message);
 });
 
-// --- Server Instance Variable ---
 let server;
 
-// --- Graceful Shutdown Logic ---
 const gracefulShutdown = async (signal) => {
     console.log(`\n${signal} received. Shutting down gracefully...`);
     readline.close();
@@ -106,15 +101,12 @@ const gracefulShutdown = async (signal) => {
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
-// --- Python AI Core Service Health Check ---
 async function checkPythonService(url) {
     console.log(`\nChecking Python AI Core service health at ${url}...`);
     try {
-        // Assuming the Python service has a /health endpoint similar to the RAG one
         const response = await axios.get(`${url}/health`, { timeout: 7000 });
         if (response.status === 200 && response.data?.status === 'ok') {
             console.log('✓ Python AI Core service is available and healthy.');
-            // Log details if provided by the Python service's /health endpoint
             if(response.data.embedding_model_type) console.log(`  Embedding: ${response.data.embedding_model_type} (${response.data.embedding_model_name || 'N/A'})`);
             if(response.data.default_index_loaded !== undefined) console.log(`  Default Index Loaded: ${response.data.default_index_loaded}`);
             if (response.data.message && response.data.message.includes("Warning:")) {
@@ -139,7 +131,6 @@ async function checkPythonService(url) {
     }
 }
 
-// --- Directory Structure Check (Simplified) ---
 async function ensureServerDirectories() {
     const dirs = [
         path.join(__dirname, 'assets'),
@@ -160,15 +151,12 @@ async function ensureServerDirectories() {
     }
 }
 
-// --- Prompt for Configuration ---
 function askQuestion(query) {
     return new Promise(resolve => readline.question(query, resolve));
 }
 
 async function configureAndStart() {
     console.log("--- Starting Server Configuration ---");
-
-    // 1. Gemini API Key Check (already loaded from .env by require('dotenv').config())
     if (!geminiApiKey) {
         console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         console.error("!!! FATAL: GEMINI_API_KEY environment variable is not set. !!!");
@@ -178,65 +166,47 @@ async function configureAndStart() {
     } else {
         console.log("✓ GEMINI_API_KEY found (from .env).");
     }
-
-    // 2. MongoDB URI
-    if (!mongoUri) { // If not set in .env
+    if (!mongoUri) {
         const answer = await askQuestion(`Enter MongoDB URI or press Enter for default (${DEFAULT_MONGO_URI}): `);
         mongoUri = answer.trim() || DEFAULT_MONGO_URI;
     }
     console.log(`Using MongoDB URI: ${mongoUri}`);
-
-    // 3. Python AI Core Service URL
-    if (!pythonServiceUrl) { // If not set in .env as PYTHON_AI_CORE_SERVICE_URL
+    if (!pythonServiceUrl) {
         const answer = await askQuestion(`Enter Python AI Core Service URL or press Enter for default (${DEFAULT_PYTHON_SERVICE_URL}): `);
         pythonServiceUrl = answer.trim() || DEFAULT_PYTHON_SERVICE_URL;
     }
     console.log(`Using Python AI Core Service URL: ${pythonServiceUrl}`);
-
-    // 4. Port for this Node.js server
     console.log(`Node.js server will attempt to listen on port: ${port} (from .env or default)`);
-
-    readline.close(); // Close the prompt interface
-
-    // Set environment variables that other modules might expect (e.g., chat.js, upload.js)
-    // if they also directly read from process.env and weren't passed values.
-    // Note: `port` is used directly in app.listen. `geminiApiKey` is already in process.env.
+    readline.close();
     process.env.MONGO_URI = mongoUri;
-    process.env.PYTHON_AI_CORE_SERVICE_URL = pythonServiceUrl; // Ensure it's set for other modules
-
+    process.env.PYTHON_AI_CORE_SERVICE_URL = pythonServiceUrl;
     console.log("--- Configuration Complete ---");
     await startServer();
 }
 
-// --- Asynchronous Server Startup Function ---
 async function startServer() {
     console.log("\n--- Starting Server Initialization ---");
     try {
         await ensureServerDirectories();
-        await connectDB(mongoUri); // Connect to MongoDB using the configured URI
+        await connectDB(mongoUri);
         await performAssetCleanup();
-        await checkPythonService(pythonServiceUrl); // Check Python AI Core service status
-
-        const PORT = parseInt(port, 10); // Ensure port is an integer
-
-        // The '0.0.0.0' makes the server accessible from other devices on the network
+        await checkPythonService(pythonServiceUrl);
+        const PORT = parseInt(port, 10);
         server = app.listen(PORT, '0.0.0.0', () => {
             const nodeEnv = process.env.NODE_ENV || 'development';
             console.log(`\n=== Node.js Server Ready ===`);
             console.log(`🚀 Node.js Server running on port ${PORT} in ${nodeEnv} mode.`);
             const availableIPs = getLocalIPs();
-            const networkIP = availableIPs.length > 0 ? availableIPs[0] : 'your-network-ip'; // Pick the first for logging
+            const networkIP = availableIPs.length > 0 ? availableIPs[0] : 'your-network-ip';
             console.log(`   Accessible at http://localhost:${PORT}`);
             if (networkIP !== 'your-network-ip' && networkIP !== '127.0.0.1') {
                 console.log(`   And externally (on your network) at http://${networkIP}:${PORT}`);
             }
             console.log('============================\n');
         });
-
     } catch (error) {
         console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         console.error("!!! Failed to start Node.js server:", error.message);
-        // Specific check for EADDRINUSE
         if (error.code === 'EADDRINUSE') {
             console.error(`!!! Port ${port} is already in use. ` +
                           `Please check if another application is using this port, ` +
@@ -246,6 +216,4 @@ async function startServer() {
         process.exit(1);
     }
 }
-
-// --- Execute Configuration and Server Start ---
 configureAndStart();
