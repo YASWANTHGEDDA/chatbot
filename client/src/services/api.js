@@ -13,7 +13,7 @@ const getApiBaseUrl = () => {
 };
 
 const API_BASE_URL = getApiBaseUrl();
-console.log("API Base URL (api.js):", API_BASE_URL); // Matches desired log
+console.log("API Base URL (api.js):", API_BASE_URL);
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -62,11 +62,7 @@ api.interceptors.response.use(
 // Authentication
 export const signupUser = (userData) => api.post('/auth/signup', userData);
 export const signinUser = (userData) => api.post('/auth/signin', userData);
-
-// --- MODIFICATION START ---
-// Save User's API Keys
 export const saveApiKeys = (keyData) => api.post('/auth/keys', keyData);
-// --- MODIFICATION END ---
 
 
 // Chat Interaction
@@ -76,6 +72,10 @@ export const saveChatHistory = (historyData) => api.post('/chat/history', histor
 // Chat History Retrieval
 export const getChatSessions = () => api.get('/chat/sessions');
 export const getSessionDetails = (sessionId) => api.get(`/chat/session/${sessionId}`);
+// --- START OF MODIFICATION ---
+// New function to delete a specific chat session
+export const deleteChatSession = (sessionId) => api.delete(`/history/session/${sessionId}`);
+// --- END OF MODIFICATION ---
 
 // File Upload
 export const uploadFile = (formData) => api.post('/upload', formData);

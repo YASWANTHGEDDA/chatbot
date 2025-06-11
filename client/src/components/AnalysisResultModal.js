@@ -1,50 +1,55 @@
 // client/src/components/AnalysisResultModal.js
-import React, { useState, useCallback, useEffect } from 'react'; // Import hooks
+import React, { useState, useCallback, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { FiX, FiCopy } from 'react-icons/fi'; // Import Copy icon
+import { FiX, FiCopy } from 'react-icons/fi';
 
 import './AnalysisResultModal.css';
 import MermaidDiagram from './MermaidDiagram';
 
 const AnalysisResultModal = ({ isOpen, onClose, analysisData }) => {
-    // State to manage the text of the copy button for user feedback
+    // ==================================================================
+    //  START OF FIX: All React Hooks are now at the top level.
+    // ==================================================================
     const [isCopied, setIsCopied] = useState(false);
 
-    // Effect to prevent body scrolling when the modal is open
+    // This hook manages the body scroll style.
     useEffect(() => {
         if (isOpen) {
             document.body.style.overflow = 'hidden';
-            // Also reset the copy button state whenever the modal opens
-            setIsCopied(false);
+            setIsCopied(false); // Reset copy state when modal opens
         } else {
             document.body.style.overflow = 'unset';
         }
-        // Cleanup function
         return () => {
             document.body.style.overflow = 'unset';
         };
     }, [isOpen]);
 
-    if (!isOpen || !analysisData) {
-        return null;
-    }
-
-    const { type, result, thinking, documentName } = analysisData;
-
-    // Handler function to copy the result text to the clipboard
+    // This hook memoizes the handleCopy function. It is now at the top level.
     const handleCopy = useCallback(() => {
-        if (result) {
-            navigator.clipboard.writeText(result).then(() => {
+        // We use optional chaining `?.` because analysisData might be null initially.
+        if (analysisData?.result) {
+            navigator.clipboard.writeText(analysisData.result).then(() => {
                 setIsCopied(true);
-                // Reset the button text after 2 seconds
                 setTimeout(() => setIsCopied(false), 2000);
             }).catch(err => {
                 console.error('Failed to copy text: ', err);
                 alert('Failed to copy text.');
             });
         }
-    }, [result]);
+    }, [analysisData?.result]); // Dependency array also uses optional chaining.
+    // ==================================================================
+    //  END OF FIX
+    // ==================================================================
+
+    // The early return can now safely happen AFTER all hooks have been called.
+    if (!isOpen || !analysisData) {
+        return null;
+    }
+
+    // Destructure props after the early return, as we know they exist here.
+    const { type, result, thinking, documentName } = analysisData;
 
     const renderResult = () => {
         if (type === 'mindmap' && result) {
@@ -68,7 +73,6 @@ const AnalysisResultModal = ({ isOpen, onClose, analysisData }) => {
             }
             return <MermaidDiagram chart={chartText} />;
         }
-        // This 'return' is critical and was fixed previously
         return (
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {result || "No analysis result provided."}
@@ -76,7 +80,6 @@ const AnalysisResultModal = ({ isOpen, onClose, analysisData }) => {
         );
     };
 
-    // The 'mindmap' type is not suitable for raw text copying
     const isCopyDisabled = isCopied || type === 'mindmap' || !result;
 
     return (
