@@ -197,3 +197,9 @@
   cursor: not-allowed;
 }
 /* END OF MODIFICATIONS */
+
+.auth-sub-header {
+    margin-top: -15px;
+    margin-bottom: 25px;
+    color: var(--text-secondary);
+}
