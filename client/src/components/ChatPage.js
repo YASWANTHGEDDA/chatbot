@@ -7,7 +7,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { v4 as uuidv4 } from 'uuid';
 import { LLM_OPTIONS } from '../config/constants';
-import { FiMessageSquare, FiDatabase, FiSettings, FiLogOut, FiSun, FiMoon, FiSend, FiPlus, FiArchive } from 'react-icons/fi';
+import { FiMessageSquare, FiDatabase, FiSettings, FiLogOut, FiSun, FiMoon, FiSend, FiPlus, FiArchive, FiTool } from 'react-icons/fi';
 
 import { useTheme } from '../context/ThemeContext';
 import SystemPromptWidget, { availablePrompts, getPromptTextById } from './SystemPromptWidget';
@@ -16,14 +16,15 @@ import FileUploadWidget from './FileUploadWidget';
 import FileManagerWidget from './FileManagerWidget';
 import AnalysisResultModal from './AnalysisResultModal';
 import VoiceInputButton from './VoiceInputButton'; // <-- Import the new component
+import ToolsView from './ToolsView'; // <-- Import the ToolsView component
 
 import './ChatPage.css';
 
 // UI Sub-Components (ActivityBar, Panels, etc. remain unchanged)
-const ActivityBar = ({ activeView, setActiveView }) => ( <div className="activity-bar"> <button className={`activity-button ${activeView === 'ASSISTANT' ? 'active' : ''}`} onClick={() => setActiveView('ASSISTANT')} title="Assistant Settings"> <FiSettings size={24} /> </button> <button className={`activity-button ${activeView === 'DATA' ? 'active' : ''}`} onClick={() => setActiveView('DATA')} title="Data Sources"> <FiDatabase size={24} /> </button> </div> );
+const ActivityBar = ({ activeView, setActiveView }) => ( <div className="activity-bar"> <button className={`activity-button ${activeView === 'ASSISTANT' ? 'active' : ''}`} onClick={() => setActiveView('ASSISTANT')} title="Assistant Settings"> <FiSettings size={24} /> </button> <button className={`activity-button ${activeView === 'DATA' ? 'active' : ''}`} onClick={() => setActiveView('DATA')} title="Data Sources"> <FiDatabase size={24} /> </button> <button className={`activity-button ${activeView === 'TOOLS' ? 'active' : ''}`} onClick={() => setActiveView('TOOLS')} title="Tool Settings"> <FiTool size={24} /> </button> </div> );
 const AssistantSettingsPanel = (props) => ( <div className="sidebar-panel"> <h3 className="sidebar-header">Assistant Settings</h3> <SystemPromptWidget selectedPromptId={props.currentSystemPromptId} promptText={props.editableSystemPromptText} onSelectChange={props.handlePromptSelectChange} onTextChange={props.handlePromptTextChange} /> <div className="llm-settings-widget"> <h4>AI Settings</h4> <div className="setting-item"> <label htmlFor="llm-provider-select">Provider:</label> <select id="llm-provider-select" value={props.llmProvider} onChange={props.handleLlmProviderChange} disabled={props.isProcessing}> {Object.keys(LLM_OPTIONS).map(key => ( <option key={key} value={key}>{LLM_OPTIONS[key].name}</option> ))} </select> </div> {LLM_OPTIONS[props.llmProvider] && LLM_OPTIONS[props.llmProvider].models.length > 0 && ( <div className="setting-item"> <label htmlFor="llm-model-select">Model:</label> <select id="llm-model-select" value={props.llmModelName} onChange={props.handleLlmModelChange} disabled={props.isProcessing}> {LLM_OPTIONS[props.llmProvider].models.map(model => <option key={model} value={model}>{model}</option>)} <option value="">Provider Default</option> </select> </div> )} <div className="setting-item rag-toggle-container" title="Enable Multi-Query for RAG"> <label htmlFor="multi-query-toggle">Multi-Query (RAG)</label> <input type="checkbox" id="multi-query-toggle" checked={props.enableMultiQuery} onChange={props.handleMultiQueryToggle} disabled={props.isProcessing || !props.isRagEnabled} /> </div> </div> </div> );
 const DataSourcePanel = (props) => ( <div className="sidebar-panel"> <h3 className="sidebar-header">Data Sources</h3> <FileUploadWidget onUploadSuccess={props.triggerFileRefresh} /> <FileManagerWidget refreshTrigger={props.refreshTrigger} onAnalysisComplete={props.onAnalysisComplete} /> </div> );
-const Sidebar = ({ activeView, ...props }) => ( <div className="sidebar-area"> {activeView === 'ASSISTANT' && <AssistantSettingsPanel {...props} />} {activeView === 'DATA' && <DataSourcePanel {...props} />} </div> );
+const Sidebar = ({ activeView, ...props }) => ( <div className="sidebar-area"> {activeView === 'ASSISTANT' && <AssistantSettingsPanel {...props} />} {activeView === 'DATA' && <DataSourcePanel {...props} />} {activeView === 'TOOLS' && <ToolsView />} </div> );
 const ThemeToggleButton = () => { const { theme, toggleTheme } = useTheme(); return ( <button onClick={toggleTheme} className="header-button theme-toggle-button" title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}> {theme === 'light' ? <FiMoon size={20} /> : <FiSun size={20} />} </button> ); };
 
 

@@ -10,3 +10,10 @@
       *   For MongoDB Atlas: Get the connection string from your Atlas cluster (replace `<password>` and specify your database name). Example: `mongodb+srv://<username>:<password>@yourcluster.mongodb.net/chatbot_gemini?retryWrites=true&w=majority`
   *   **JWT_SECRET:** Generate a strong random string for security.
   *   **GEMINI_API_KEY:** Paste the key you obtained from Google AI Studio.
+
+yt_dlp
+arxiv
+duckduckgo_search
+pdf2image
+pytesseract
+scholarly

@@ -8,6 +8,7 @@ import AnalysisResultModal from './AnalysisResultModal';
 const ChatPage = React.lazy(() => import('./ChatPage'));
 const FilesView = React.lazy(() => import('./FilesView'));
 const AnalysisView = React.lazy(() => import('./AnalysisView'));
+const ToolsView = React.lazy(() => import('./ToolsView'));
 
 const LoadingFallback = () => <div style={{padding: '20px', textAlign: 'center'}}>Loading View...</div>;
 
@@ -69,6 +70,7 @@ const MainLayout = ({ performLogout }) => {
                         {currentView === 'chat' && <ChatPage />}
                         {currentView === 'files' && <FilesView onAnalysisRequest={handleManualAnalysisRequest} onAutoAnalysisReady={handleAutoAnalysisReady} />}
                         {currentView === 'analysis' && <AnalysisView analysisData={analysisViewData} documentName={analysisDocumentName}/>}
+                        {currentView === 'tools' && <ToolsView />}
                         {/* You can add a History view component here later */}
                     </Suspense>
                 </main>

@@ -1,0 +1,97 @@
+.web-pdf-downloader-tool {
+    padding: 20px;
+    margin: 0 auto;
+}
+
+.web-pdf-downloader-tool h3 {
+    color: #f0f0f0;
+    margin-bottom: 20px;
+}
+
+.web-pdf-downloader-tool form div {
+    margin-bottom: 15px;
+}
+
+.web-pdf-downloader-tool label {
+    display: block;
+    margin-bottom: 5px;
+    color: #e0e0e0;
+    font-weight: bold;
+}
+
+.web-pdf-downloader-tool input[type="text"],
+.web-pdf-downloader-tool input[type="number"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #555;
+    border-radius: 4px;
+    background-color: #333;
+    color: #fff;
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
+
+.web-pdf-downloader-tool input[type="text"]::placeholder,
+.web-pdf-downloader-tool input[type="number"]::placeholder {
+    color: #aaa;
+}
+
+.web-pdf-downloader-tool button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.web-pdf-downloader-tool button:hover {
+    background-color: #0056b3;
+}
+
+.web-pdf-downloader-tool button:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+}
+
+.web-pdf-downloader-tool .error-message {
+    color: #ff6b6b;
+    margin-top: 15px;
+    font-weight: bold;
+}
+
+.web-pdf-downloader-tool .results-section {
+    background-color: #2a2a2a;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.web-pdf-downloader-tool .results-section h4 {
+    color: #f0f0f0;
+    margin-bottom: 10px;
+}
+
+.web-pdf-downloader-tool .results-section p {
+    color: #e0e0e0;
+    margin-bottom: 8px;
+}
+
+.web-pdf-downloader-tool .results-section ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.web-pdf-downloader-tool .results-section li {
+    margin-bottom: 5px;
+    color: #c0c0c0;
+}
+
+.web-pdf-downloader-tool .results-section li a {
+    color: #8ab4f8;
+    text-decoration: none;
+}
+
+.web-pdf-downloader-tool .results-section li a:hover {
+    text-decoration: underline;
+} 

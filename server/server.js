@@ -33,9 +33,10 @@ let geminiApiKey = process.env.GEMINI_API_KEY || '';
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-app.get('/', (req, res) => res.send('Chatbot Backend API is running...'));
+app.get('/', (req, res) => res.send('Chatbot Backend API (FusedChatbot Server) is running...'));
 
 app.use('/api/network', require('./routes/network'));
 app.use('/api/auth', require('./routes/auth'));
@@ -44,20 +45,17 @@ app.use('/api/upload', require('./routes/upload'));
 app.use('/api/files', require('./routes/files'));
 app.use('/api/syllabus', require('./routes/syllabus'));
 app.use('/api/analysis', analysisRoutes);
-// --- START OF MODIFICATION ---
-// Mount the new history routes
 app.use('/api/history', historyRoutes);
-// --- END OF MODIFICATION ---
 
 app.use((err, req, res, next) => {
-    console.error("Unhandled Error:", err.stack || err);
-    const statusCode = err.status || 500;
+    console.error("Unhandled Error in Express:", err.stack || err);
+    const statusCode = err.status || err.statusCode || 500;
     let message = err.message || 'An internal server error occurred.';
     if (process.env.NODE_ENV === 'production' && statusCode === 500) {
         message = 'An internal server error occurred.';
     }
     if (req.originalUrl.startsWith('/api/')) {
-         return res.status(statusCode).json({ message: message });
+         return res.status(statusCode).json({ message: message, error: err.name || "Error" });
     }
     res.status(statusCode).send(message);
 });
@@ -102,41 +100,51 @@ process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 async function checkPythonService(url) {
+    if (!url) {
+        console.warn('! Python AI Core service URL is not configured. Cannot check health.');
+        return false;
+    }
     console.log(`\nChecking Python AI Core service health at ${url}...`);
     try {
-        const response = await axios.get(`${url}/health`, { timeout: 7000 });
+        const response = await axios.get(`${url}/health`, { timeout: 7000 }); // 7-second timeout
         if (response.status === 200 && response.data?.status === 'ok') {
             console.log('✓ Python AI Core service is available and healthy.');
-            if(response.data.embedding_model_type) console.log(`  Embedding: ${response.data.embedding_model_type} (${response.data.embedding_model_name || 'N/A'})`);
+            if(response.data.embedding_model_name) console.log(`  Embedding Model: ${response.data.embedding_model_name}`);
             if(response.data.default_index_loaded !== undefined) console.log(`  Default Index Loaded: ${response.data.default_index_loaded}`);
-            if (response.data.message && response.data.message.includes("Warning:")) {
-                 console.warn(`  Python Service Health Warning: ${response.data.message}`);
+            if(response.data.core_api_key_set !== undefined) console.log(`  CORE API Key Set (Python side): ${response.data.core_api_key_set}`);
+            if (response.data.message && response.data.message.includes("Status: ")) { // Check for more detailed status messages
+                 console.log(`  Python Service Health Details: ${response.data.message}`);
             }
             return true;
         } else {
-             console.warn(`! Python AI Core service responded but status is not OK: ${response.status} - ${JSON.stringify(response.data)}`);
+             console.warn(`! Python AI Core service responded but is not healthy: Status ${response.status} - Data: ${JSON.stringify(response.data)}`);
              return false;
         }
     } catch (error) {
-        console.warn('! Python AI Core service is not reachable.');
-        if (error.code === 'ECONNREFUSED') {
-             console.warn(`  Connection refused at ${url}. Ensure the Python AI Core service (ai_core_service/app.py) is running.`);
-        } else if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-             console.warn(`  Connection timed out to ${url}. The Python service might be slow to start or unresponsive.`);
-        } else {
-             console.warn(`  Error: ${error.message}`);
+        console.warn('! Python AI Core service is not reachable or an error occurred during health check.');
+        if (error.code) { // Axios error codes
+             console.warn(`  Error Code: ${error.code}`);
         }
-        console.warn('  Features dependent on this service (e.g., RAG, document analysis) may be unavailable or impaired.');
+        if (error.message) {
+             console.warn(`  Error Message: ${error.message}`);
+        }
+        if (error.code === 'ECONNREFUSED') {
+             console.warn(`  Ensure the Python AI Core service (ai_core_service/app.py) is running on the configured port.`);
+        }
+        console.warn('  Features dependent on this service may be unavailable or impaired.');
         return false;
     }
 }
 
 async function ensureServerDirectories() {
+    // Directories essential for this Node.js server's operation
+    // (Python service manages its own output dirs via its config.py)
     const dirs = [
-        path.join(__dirname, 'assets'),
-        path.join(__dirname, 'backup_assets'),
+        path.join(__dirname, 'assets'),          // For general static assets if any
+        path.join(__dirname, 'backup_assets'),   // For backups
+        path.join(__dirname, 'uploads_node_temp') // For temporary file uploads by Multer
     ];
-    console.log("\nEnsuring server directories exist...");
+    console.log("\nEnsuring essential server directories exist...");
     try {
         for (const dir of dirs) {
             if (!fs.existsSync(dir)) {
@@ -144,10 +152,10 @@ async function ensureServerDirectories() {
                 console.log(`  Created directory: ${dir}`);
             }
         }
-        console.log("✓ Server directories checked/created.");
+        console.log("✓ Essential server directories checked/created.");
     } catch (error) {
         console.error('!!! Error creating essential server directories:', error);
-        throw error;
+        throw error; // Propagate error to stop server start if critical dirs can't be made
     }
 }
 
@@ -157,63 +165,84 @@ function askQuestion(query) {
 
 async function configureAndStart() {
     console.log("--- Starting Server Configuration ---");
+
     if (!geminiApiKey) {
-        console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-        console.error("!!! FATAL: GEMINI_API_KEY environment variable is not set. !!!");
-        console.error("!!! Please set it in your .env file.                     !!!");
-        console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        console.error("\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        console.error("!!! FATAL: GEMINI_API_KEY environment variable is not set.   !!!");
+        console.error("!!! Please set it in your server/.env file.                  !!!");
+        console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
         process.exit(1);
     } else {
-        console.log("✓ GEMINI_API_KEY found (from .env).");
+        console.log("✓ GEMINI_API_KEY found.");
     }
+
     if (!mongoUri) {
+        console.warn("\nMongoDB URI not found in .env (MONGO_URI).");
         const answer = await askQuestion(`Enter MongoDB URI or press Enter for default (${DEFAULT_MONGO_URI}): `);
         mongoUri = answer.trim() || DEFAULT_MONGO_URI;
     }
     console.log(`Using MongoDB URI: ${mongoUri}`);
+    process.env.MONGO_URI = mongoUri; // Ensure it's set for connectDB
+
     if (!pythonServiceUrl) {
+        console.warn("\nPython AI Core Service URL not found in .env (PYTHON_AI_CORE_SERVICE_URL).");
         const answer = await askQuestion(`Enter Python AI Core Service URL or press Enter for default (${DEFAULT_PYTHON_SERVICE_URL}): `);
         pythonServiceUrl = answer.trim() || DEFAULT_PYTHON_SERVICE_URL;
     }
     console.log(`Using Python AI Core Service URL: ${pythonServiceUrl}`);
-    console.log(`Node.js server will attempt to listen on port: ${port} (from .env or default)`);
-    readline.close();
-    process.env.MONGO_URI = mongoUri;
-    process.env.PYTHON_AI_CORE_SERVICE_URL = pythonServiceUrl;
+    process.env.PYTHON_AI_CORE_SERVICE_URL = pythonServiceUrl; // Ensure it's set for route handlers
+
+    // Port for this Node.js server (already loaded into 'port' variable)
+    console.log(`Node.js server will attempt to listen on port: ${port}`);
+
+    readline.close(); // Close the prompt interface
     console.log("--- Configuration Complete ---");
+
     await startServer();
 }
 
 async function startServer() {
     console.log("\n--- Starting Server Initialization ---");
     try {
-        await ensureServerDirectories();
-        await connectDB(mongoUri);
-        await performAssetCleanup();
-        await checkPythonService(pythonServiceUrl);
+        await ensureServerDirectories();    // Ensure Node.js server's own directories
+        await connectDB(mongoUri);          // Connect to MongoDB
+        await performAssetCleanup();        // Perform asset cleanup if any
+        await checkPythonService(pythonServiceUrl); // Check Python service health
+
         const PORT = parseInt(port, 10);
+
         server = app.listen(PORT, '0.0.0.0', () => {
             const nodeEnv = process.env.NODE_ENV || 'development';
-            console.log(`\n=== Node.js Server Ready ===`);
-            console.log(`🚀 Node.js Server running on port ${PORT} in ${nodeEnv} mode.`);
-            const availableIPs = getLocalIPs();
-            const networkIP = availableIPs.length > 0 ? availableIPs[0] : 'your-network-ip';
-            console.log(`   Accessible at http://localhost:${PORT}`);
-            if (networkIP !== 'your-network-ip' && networkIP !== '127.0.0.1') {
-                console.log(`   And externally (on your network) at http://${networkIP}:${PORT}`);
-            }
-            console.log('============================\n');
+            console.log(`\n======================================================================`);
+            console.log(`🚀 Node.js Server (FusedChatbot Backend) is running!`);
+            console.log(`   Mode: ${nodeEnv}`);
+            console.log(`   Port: ${PORT}`);
+            const localIPs = getLocalIPs();
+            console.log(`   Listening on: http://localhost:${PORT}`);
+            localIPs.forEach(ip => {
+                if (ip !== '127.0.0.1' && ip !== 'localhost') { // Avoid redundancy
+                    console.log(`                 http://${ip}:${PORT} (on your network)`);
+                }
+            });
+            console.log(`   MongoDB Connected To: ${mongoUri.substring(0, mongoUri.lastIndexOf('/'))}/...`);
+            console.log(`   Python AI Core Service Expected At: ${pythonServiceUrl}`);
+            console.log(`======================================================================\n`);
         });
+
     } catch (error) {
-        console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-        console.error("!!! Failed to start Node.js server:", error.message);
+        console.error("\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        console.error("!!! FAILED TO START NODE.JS SERVER                           !!!");
         if (error.code === 'EADDRINUSE') {
             console.error(`!!! Port ${port} is already in use. ` +
-                          `Please check if another application is using this port, ` +
-                          `or change the PORT in your .env file to an available port.`);
+                          `Please check if another application (or a previous instance of this server) ` +
+                          `is using this port, or change the PORT in your server/.env file.`);
+        } else {
+            console.error(`!!! Error: ${error.message}`);
         }
-        console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-        process.exit(1);
+        console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+        process.exit(1); // Exit if server fails to start
     }
 }
+
+// --- Execute Configuration and Server Start ---
 configureAndStart();
