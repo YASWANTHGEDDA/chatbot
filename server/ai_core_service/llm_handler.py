@@ -82,17 +82,35 @@ if PromptTemplate:
 **BEGIN OUTPUT (Start with '*   **' or `<thinking>`):**
 """
         ),
+        # --- REPLACE THE MINDMAP PROMPT WITH THIS NEW, STRONGER VERSION ---
         "mindmap": PromptTemplate(
             input_variables=["doc_text_for_llm"],
-            template=_ANALYSIS_THINKING_PREFIX_STR + """
-**TASK:** Generate a mind map outline in Markdown list format representing key concepts and hierarchy ONLY from the text. Generate an appropriate level of detail for the provided text.
-**OUTPUT FORMAT (Strict):**
-*   Start directly with the main topic as the top-level item (using '-') (after thinking, if used). Do **NOT** include preamble.
-*   Use nested Markdown lists ('-' or '*') with indentation (2 or 4 spaces) for hierarchy.
-*   Focus **strictly** on concepts and relationships mentioned in the text. Be concise.
-**BEGIN OUTPUT (Start with e.g., '- Main Topic' or `<thinking>`):**
+            template="""You are a text-to-Mermaid-syntax converter. Your ONLY job is to create a mind map from the user's text.
+
+**CRITICAL INSTRUCTIONS:**
+1.  **TOP-LEVEL DECLARATION:** The entire output MUST begin with the single word `mindmap` on the first line. NO other text, preamble, or explanation should come before it.
+2.  **HIERARCHY:** Use indentation to show hierarchy. More indentation means a deeper level in the mind map.
+3.  **NO MARKDOWN:** Do NOT use Markdown characters like `-`, `*`, or `#`.
+4.  **CONCISENESS:** Keep node text brief and to the point.
+
+**STRICT OUTPUT EXAMPLE:**
+mindmap
+  Main Idea
+    Key Concept A
+      Detail 1
+      Detail 2
+    Key Concept B
+    Key Concept C
+      Detail 3
+
+--- START DOCUMENT TEXT ---
+{doc_text_for_llm}
+--- END DOCUMENT TEXT ---
+
+Based on the text, generate the Mermaid mind map syntax now.
 """
-        )
+        ),
+        # --- END OF REPLACEMENT ---
     }
     logger.info("ANALYSIS_PROMPTS initialized using Langchain PromptTemplate objects.")
 else:
@@ -286,6 +304,9 @@ def perform_document_analysis(document_text: str,
             user_grok_api_key=user_grok_api_key
         )
         logger.info(f"Successfully received analysis from {llm_provider}.")
+        # For the new mindmap prompt, we should NOT parse for thinking, as it's been explicitly removed.
+        if analysis_type == 'mindmap':
+            return raw_response.strip(), None
         return _parse_thinking_and_answer(raw_response)
     except Exception as e:
         logger.error(f"Error during '{analysis_type}' analysis with {llm_provider}: {e}", exc_info=True)

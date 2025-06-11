@@ -136,3 +136,28 @@
 .analysis-modal-footer button:hover {
     background-color: var(--accent-blue-dark, #0056b3);
 }
+
+/* client/src/components/AnalysisResultModal.css (ADD THIS CSS) */
+
+/* Ensure the modal body can scroll if content overflows */
+.analysis-modal-body {
+    overflow-y: auto;
+    max-height: 70vh; /* Adjust as needed */
+    padding-right: 15px; /* Add some padding for the scrollbar */
+}
+
+/* Style the container for the analysis result to be flexible */
+.analysis-result-text {
+    background-color: #1e1e1e; /* Dark background for the content area */
+    border: 1px solid #333;
+    border-radius: 5px;
+    padding: 15px;
+    margin-top: 10px;
+    min-height: 200px;
+}
+
+/* Target the SVG inside the Mermaid container for better display */
+.analysis-result-text .mermaid-container svg {
+    max-width: 100% !important; /* Ensure it's responsive */
+    height: auto !important;   /* Maintain aspect ratio */
+}
