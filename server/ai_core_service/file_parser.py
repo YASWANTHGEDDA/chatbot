@@ -14,7 +14,7 @@ except ImportError:
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document as LangchainDocument
-from . import config # Import from the current package (ai_core_service)
+from . import config # Changed to relative import
 import logging
 
 # Configure logger for this module

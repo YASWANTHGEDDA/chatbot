@@ -20,6 +20,7 @@ const analysisRoutes = require('./routes/analysis');
 // --- START OF MODIFICATION ---
 // Import the new history routes
 const historyRoutes = require('./routes/history');
+const externalAiTools = require('./routes/externalAiTools'); // Import external AI tools routes
 // --- END OF MODIFICATION ---
 
 const DEFAULT_PORT = 5000;
@@ -46,6 +47,7 @@ app.use('/api/files', require('./routes/files'));
 app.use('/api/syllabus', require('./routes/syllabus'));
 app.use('/api/analysis', analysisRoutes);
 app.use('/api/history', historyRoutes);
+app.use('/api/external-ai-tools', externalAiTools); // Use external AI tools routes
 
 app.use((err, req, res, next) => {
     console.error("Unhandled Error in Express:", err.stack || err);

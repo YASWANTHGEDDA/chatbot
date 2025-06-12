@@ -7,7 +7,7 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_core.embeddings import Embeddings as LangchainEmbeddings
 from langchain_core.documents import Document as LangchainDocument
 from langchain_community.docstore import InMemoryDocstore
-from . import config
+from ai_core_service import config
 import numpy as np
 import time
 import logging

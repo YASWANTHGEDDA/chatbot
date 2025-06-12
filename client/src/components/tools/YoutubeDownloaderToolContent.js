@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { downloadYouTubeMedia, getProxiedFileDownloadUrl } from '../../services/api';
 import './YouTubeDownloaderTool.css'; // Create this CSS file
 
-const YouTubeDownloaderToolContent = ({ onMediaDownloaded, initialData }) => {
+const YouTubeDownloaderToolContent = ({ onMediaDownloaded = () => {}, initialData }) => {
+    console.log('YouTubeDownloaderToolContent received onMediaDownloaded:', typeof onMediaDownloaded);
     const [youtubeUrl, setYoutubeUrl] = useState(initialData?.url || '');
     const [qualityProfile, setQualityProfile] = useState(initialData?.quality || '720p'); // '720p', '1080p', 'audio_mp3', 'audio_best', 'best'
     const [isLoading, setIsLoading] = useState(false);
@@ -56,7 +57,7 @@ const YouTubeDownloaderToolContent = ({ onMediaDownloaded, initialData }) => {
         <div className="tool-content-panel youtube-downloader-tool">
             <h3>YouTube Downloader</h3>
             <form onSubmit={handleSubmit}>
-                <div>
+                <div className="form-group">
                     <label htmlFor="youtubeUrl">YouTube Video URL:</label>
                     <input
                         type="url"
@@ -67,7 +68,7 @@ const YouTubeDownloaderToolContent = ({ onMediaDownloaded, initialData }) => {
                         required
                     />
                 </div>
-                <div>
+                <div className="form-group">
                     <label htmlFor="qualityProfile">Quality:</label>
                     <select 
                         id="qualityProfile" 

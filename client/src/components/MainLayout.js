@@ -3,6 +3,7 @@
 import React, { useState, Suspense, useCallback } from 'react';
 import Sidebar from './Sidebar';
 import AnalysisResultModal from './AnalysisResultModal';
+import './MainLayout.css'; // Import the new CSS file
 
 // Lazy load the different "views" for better performance
 const ChatPage = React.lazy(() => import('./ChatPage'));
@@ -10,7 +11,7 @@ const FilesView = React.lazy(() => import('./FilesView'));
 const AnalysisView = React.lazy(() => import('./AnalysisView'));
 const ToolsView = React.lazy(() => import('./ToolsView'));
 
-const LoadingFallback = () => <div style={{padding: '20px', textAlign: 'center'}}>Loading View...</div>;
+const LoadingFallback = () => <div className="loading-fallback">Loading View...</div>;
 
 const MainLayout = ({ performLogout }) => {
     // This state controls which view is visible in the main content area
@@ -45,27 +46,19 @@ const MainLayout = ({ performLogout }) => {
     }, []);
 
     return (
-        <div style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden' }}>
+        <div className="app-container">
             <Sidebar currentView={currentView} setCurrentView={setCurrentView} />
             
-            <div className="main-content-area" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <header style={{ 
-                    padding: '10px 20px', 
-                    backgroundColor: '#1e1e1e', 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    flexShrink: 0,
-                    borderBottom: '1px solid #333'
-                }}>
+            <div className="main-content-area">
+                <header className="main-header">
                     <h2>FusedChat: {currentView.charAt(0).toUpperCase() + currentView.slice(1)}</h2>
                     <div>
-                        <span style={{ marginRight: '20px' }}>Hi, {username}!</span>
+                        <span>Hi, {username}!</span>
                         <button onClick={performLogout}>Logout</button>
                     </div>
                 </header>
                 
-                <main style={{ flex: 1, overflowY: 'auto', backgroundColor: '#1a1a1a' }}>
+                <main className="main-content-view">
                     <Suspense fallback={<LoadingFallback />}>
                         {currentView === 'chat' && <ChatPage />}
                         {currentView === 'files' && <FilesView onAnalysisRequest={handleManualAnalysisRequest} onAutoAnalysisReady={handleAutoAnalysisReady} />}

@@ -1,5 +1,5 @@
 .tools-view-container {
-    display: flex;
+    /* display: flex; */
     height: 100%;
     background-color: #1a1a1a;
     color: white;
@@ -53,8 +53,8 @@
 }
 
 .tools-content-area {
-    flex: 1;
+    /* flex: 1; */
     padding: 20px;
     overflow-y: auto;
     overflow-x: auto;
-} 
+}
