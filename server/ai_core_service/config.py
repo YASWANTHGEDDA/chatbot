@@ -28,6 +28,7 @@ RAG_SERVICE_PORT = AI_CORE_SERVICE_PORT # Alias
 
 # --- LLM and RAG Defaults ---
 ANALYSIS_MAX_CONTEXT_LENGTH = int(os.getenv('ANALYSIS_MAX_CONTEXT_LENGTH', 8000))
+POPPLER_PATH = os.getenv('POPPLER_PATH', r'C:\Users\Asus\Downloads\Release-24.08.0-0\poppler-24.08.0\Library\bin')
 DEFAULT_LLM_PROVIDER = os.getenv("DEFAULT_LLM_PROVIDER", "ollama")
 DEFAULT_RAG_K = int(os.getenv("DEFAULT_RAG_K", 3))
 REFERENCE_SNIPPET_LENGTH = int(os.getenv("REFERENCE_SNIPPET_LENGTH", 200))
