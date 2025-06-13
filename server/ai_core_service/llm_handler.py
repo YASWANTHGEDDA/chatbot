@@ -182,7 +182,7 @@ DEFAULT_GEMINI_SAFETY_SETTINGS = [
 logger.info("LLM Handler initialized. API clients will be created per-request.")
 
 # Ollama configuration remains the same as it doesn't use API keys
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://172.180.9.187:11434/")
 DEFAULT_OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
 ollama_available = bool(ChatOllama and HumanMessage)
 
