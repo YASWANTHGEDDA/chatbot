@@ -328,5 +328,3 @@ This section provides details on how to use each tool from the FusedChat interfa
     *   *(For testers: `ffmpeg` is often required by `yt-dlp` for merging separate video/audio streams or converting to MP3. Ensure `ffmpeg` is installed and in the system PATH on the Python server environment.)*
 
 ---
-
-This detailed breakdown should give your mentor a clear understanding of how each tool is intended to be used from the frontend, what happens behind the scenes, and what kind of output to expect. It also includes hints for testers regarding common dependencies.
