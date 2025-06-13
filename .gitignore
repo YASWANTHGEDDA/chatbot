@@ -1,52 +1,89 @@
-# === Node.js (client/ and server/) ===
-node_modules/
+# FusedChatbotNew/.gitignore
+
+# ===================================================================
+# 1. DEPENDENCIES & LOCK FILES
+# ===================================================================
+# Node.js dependencies for both client and server
+/client/node_modules
+/server/node_modules
+
+# Python virtual environment
+/server/ai_core_service/venv
+/server/ai_core_service/.venv
+
+# Dependency logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+
+# ===================================================================
+# 2. SENSITIVE & ENVIRONMENT-SPECIFIC FILES
+# ===================================================================
+# Never commit environment variables. Use .env.example instead.
 .env
-.env.*          # In case you use environment-specific files like .env.development
+.env.*
+!.env.example
 
-# === Python (ai_core_service/) ===
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-*.log
-*.sqlite3
-*.egg-info/
-.Python
-env/
-venv/
-ENV/
-.venv/
-pip-log.txt
-requirements.lock
-ai_core_service/indexes/
-server/faiss_indices/
+# Server-specific environment files
+/server/.env
 
-# === FAISS index files ===
-*.faiss
-*.json
+# React-specific environment files
+/client/.env.local
+/client/.env.development.local
+/client/.env.test.local
+/client/.env.production.local
 
-# === React build ===
-client/build/
-client/.cache/
-client/.env.local
-client/.env.development.local
-client/.env.test.local
-client/.env.production.local
 
-# === VS Code settings ===
-.vscode/
-.history/
+# ===================================================================
+# 3. BUILD ARTIFACTS & CACHES
+# ===================================================================
+# React build output
+/client/build
+/client/.cache
 
-# === OS-generated files ===
+# Python bytecode and distribution files
+/server/ai_core_service/__pycache__
+/server/ai_core_service/*.py[cod]
+/server/ai_core_service/*.egg-info
+/server/ai_core_service/dist
+/server/ai_core_service/build
+
+
+# ===================================================================
+# 4. USER-GENERATED & RUNTIME DATA
+# ===================================================================
+# Top-level uploads directory
+/uploads/
+
+# User-specific assets (like uploaded code, docs, images)
+/server/assets/*
+!/server/assets/.gitkeep
+
+# User-specific backups
+/server/backup_assets/
+
+# Generated FAISS vector indexes
+/server/faiss_indices/
+/server/ai_core_service/indexes/
+
+# Temporary directories created during uploads
+/server/682d73135a427c0d9205b1dc/
+/server/python_tool_assets/
+
+# ===================================================================
+# 5. OS & EDITOR CONFIGURATION
+# ===================================================================
 .DS_Store
 Thumbs.db
-
-# === Backup or temp files ===
-*.bak
+.vscode/
+.idea/
+.history/
 *.swp
-*.tmp
-*.temp
-~$*
+
+
+# ===================================================================
+# 6. LOG FILES
+# ===================================================================
+*.log
+logs

@@ -49,6 +49,16 @@ const ChatHistorySchema = new mongoose.Schema({
         unique: true,
         index: true,
     },
+    title: {
+        type: String,
+        default: 'New Chat',
+        required: true
+    },
+    modelProvider: {
+        type: String,
+        enum: ['gemini', 'grok', 'ollama'],
+        default: 'gemini'
+    },
     messages: [MessageSchema],
     createdAt: {
         type: Date,

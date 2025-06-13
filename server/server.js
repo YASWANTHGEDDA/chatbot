@@ -25,6 +25,7 @@ const filesRoutes = require('./routes/files');
 const syllabusRoutes = require('./routes/syllabus');
 const analysisRoutes = require('./routes/analysis');
 const externalAiToolsRoutes = require('./routes/externalAiTools'); // For Python tools
+const historyRoutes = require('./routes/history');
 
 const DEFAULT_PORT = process.env.PORT || 5003; // Use PORT from .env or default to 5003
 const DEFAULT_MONGO_URI = 'mongodb://localhost:27017/chatbotGeminiDB';
@@ -54,6 +55,7 @@ app.use('/api/files', filesRoutes);
 app.use('/api/syllabus', syllabusRoutes);
 app.use('/api/analysis', analysisRoutes);
 app.use('/api/external-ai-tools', externalAiToolsRoutes); // Mount the external AI tools router
+app.use('/api/history', historyRoutes);
 
 // --- Global Error Handler ---
 // Must be the last piece of middleware

@@ -149,8 +149,50 @@ router.post('/message', tempAuth, async (req, res) => {
     }
 });
 
+// Continue with existing chat session
+router.post('/continue', tempAuth, async (req, res) => {
+    const { sessionId } = req.body;
+    const userId = req.user._id.toString();
 
-// ... (The rest of the file remains unchanged) ...
+    if (!sessionId) {
+        return res.status(400).json({ message: 'Session ID is required.' });
+    }
+
+    try {
+        // Find the existing chat session
+        const existingSession = await ChatHistory.findOne({ 
+            sessionId: sessionId,
+            userId: userId
+        });
+
+        if (!existingSession) {
+            return res.status(404).json({ 
+                message: 'Chat session not found or you do not have permission to access it.' 
+            });
+        }
+
+        // Get the last few messages for context (e.g., last 10 messages)
+        const lastMessages = existingSession.messages.slice(-10);
+
+        // Return the session details and last messages
+        res.status(200).json({
+            sessionId: existingSession.sessionId,
+            title: existingSession.title,
+            lastMessages: lastMessages,
+            modelProvider: existingSession.modelProvider,
+            createdAt: existingSession.createdAt,
+            updatedAt: existingSession.updatedAt
+        });
+
+    } catch (error) {
+        console.error(`Error continuing chat session ${sessionId}:`, error);
+        res.status(500).json({ 
+            message: 'Failed to continue chat session.',
+            error: error.message 
+        });
+    }
+});
+
 // Chat History Routes
 router.post('/history', tempAuth, async (req, res) => {
     const { sessionId, messages } = req.body;
@@ -242,6 +284,41 @@ router.get('/session/:sessionId', tempAuth, async (req, res) => {
     } catch (error) {
         console.error(`Error fetching chat session ${sessionId} for user ${userId}:`, error);
         res.status(500).json({ message: 'Failed to retrieve chat session details.' });
+    }
+});
+
+
+router.delete('/session/:sessionId', tempAuth, async (req, res) => {
+    const userId = req.user._id;
+    const { sessionId } = req.params;
+
+    if (!sessionId) {
+        return res.status(400).json({ message: 'Session ID is required to delete.' });
+    }
+
+    try {
+        console.log(`>>> DELETE /api/chat/session/${sessionId} requested by User ${userId}`);
+        
+        // Find and delete the chat history document that matches BOTH the session ID
+        // and the authenticated user's ID. This is a crucial security check.
+        const result = await ChatHistory.findOneAndDelete({ 
+            sessionId: sessionId, 
+            userId: userId 
+        });
+
+        if (!result) {
+            // This can happen if the user tries to delete a session that doesn't exist
+            // or doesn't belong to them.
+            console.warn(`   Session not found or user mismatch for session ${sessionId} and user ${userId}.`);
+            return res.status(404).json({ message: 'Session not found or you do not have permission to delete it.' });
+        }
+
+        console.log(`<<< Session ${sessionId} successfully deleted for user ${userId}.`);
+        res.status(200).json({ message: 'Session deleted successfully.' });
+
+    } catch (error) {
+        console.error(`!!! Error deleting session ${sessionId} for user ${userId}:`, error);
+        res.status(500).json({ message: 'Failed to delete session due to a server error.' });
     }
 });
 

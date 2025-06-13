@@ -98,7 +98,6 @@ export const deleteUserFile = (serverFilename) => api.delete(`/files/${serverFil
 export const analyzeDocument = (analysisData) => api.post('/analysis/document', analysisData);
 // --- END: RESTORED ORIGINAL API FUNCTIONS ---
 
-
 // --- NEW: External AI Tool Service Functions ---
 const EXTERNAL_AI_TOOLS_PROXY_PATH = `/external-ai-tools`; // Path on Node.js server
 
